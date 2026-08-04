@@ -1,7 +1,7 @@
 package com.swarmbuilder.app.swarm
 
-import android.util.Log
-import com.swarmbuilder.app.models.*
+import com.swarmbuilder.app.models.LlmProvider
+import com.swarmbuilder.app.models.UserSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -41,7 +41,7 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    // ── Groq ─────────────────────────────────────────────────────────────────
+    // ── Groq ──────────────────────────────────────────────────────────────────
 
     private fun groqComplete(prompt: String, system: String, model: String): String {
         val body = JSONObject().apply {
@@ -56,7 +56,7 @@ class LlmClient(private val settings: UserSettings) {
 
         val req = Request.Builder()
             .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
-            .addHeader("Authorization", "******")
+            .addHeader("Authorization", bearerToken(settings.groqApiKey))
             .post(body)
             .build()
 
@@ -77,7 +77,7 @@ class LlmClient(private val settings: UserSettings) {
 
         val req = Request.Builder()
             .url("${LlmProvider.HUGGINGFACE.baseUrl}/$model")
-            .addHeader("Authorization", "******")
+            .addHeader("Authorization", bearerToken(settings.huggingFaceToken))
             .post(body)
             .build()
 
@@ -102,7 +102,7 @@ class LlmClient(private val settings: UserSettings) {
 
         val req = Request.Builder()
             .url("${LlmProvider.OPENROUTER.baseUrl}/chat/completions")
-            .addHeader("Authorization", "******")
+            .addHeader("Authorization", bearerToken(settings.openRouterApiKey))
             .addHeader("HTTP-Referer", "https://github.com/swarmbuilder")
             .post(body)
             .build()
@@ -143,6 +143,13 @@ class LlmClient(private val settings: UserSettings) {
                 .getJSONObject("message")
                 .getString("content")
         }
+    }
+
+    // ── Auth helper ──────────────────────────────────────────────────────────
+
+    private fun bearerToken(key: String): String = buildString {
+        append("Bearer ")
+        append(key)
     }
 
     companion object {
