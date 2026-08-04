@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SwarmBuilder</string>
+
+    <!-- Main -->
+    <string name="label_describe_app">Describe the Android app you want to build</string>
+    <string name="hint_prompt">e.g. A to-do list app with dark mode and cloud sync</string>
+    <string name="label_providers">Supported free LLM providers</string>
+    <string name="providers_list">• Groq (Llama 3) — groq.com/free\n• Hugging Face Inference API — free tier\n• OpenRouter — free models\n• Ollama — local models</string>
+    <string name="btn_build">🚀 Build My App</string>
+    <string name="error_prompt_empty">Please describe your app first</string>
+
+    <!-- Build -->
+    <string name="title_building">Building…</string>
+    <string name="phase_waiting">Waiting…</string>
+    <string name="btn_install_apk">Install APK</string>
+    <string name="btn_open_github">Open on GitHub</string>
+
+    <!-- Settings -->
+    <string name="label_groq_key">Groq API Key (free at console.groq.com)</string>
+    <string name="label_hf_token">Hugging Face Token (free at huggingface.co)</string>
+    <string name="label_or_key">OpenRouter API Key (free at openrouter.ai)</string>
+    <string name="label_gh_token">GitHub Personal Access Token</string>
+    <string name="label_gh_user">GitHub Username</string>
+    <string name="label_provider">Preferred LLM Provider</string>
+    <string name="label_use_ollama">Use local Ollama instead</string>
+    <string name="hint_ollama_model">Ollama model name (e.g. llama3)</string>
+    <string name="btn_save">Save Settings</string>
+</resources>
