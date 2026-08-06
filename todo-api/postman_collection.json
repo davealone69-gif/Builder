@@ -1,0 +1,76 @@
+{
+  "info": {
+    "name": "Todo API (API Key Auth)",
+    "_postman_id": "9dba9400-7a67-4fcb-95de-1d87decb8405",
+    "description": "Sample collection for Todo API protected by X-API-KEY.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "List Todos",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-KEY", "value": "{{apiKey}}" }],
+        "url": { "raw": "{{baseUrl}}/todos", "host": ["{{baseUrl}}"], "path": ["todos"] }
+      }
+    },
+    {
+      "name": "Create Todo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-KEY", "value": "{{apiKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Buy milk\",\n  \"completed\": false\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/todos", "host": ["{{baseUrl}}"], "path": ["todos"] }
+      }
+    },
+    {
+      "name": "Get Todo By ID",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-KEY", "value": "{{apiKey}}" }],
+        "url": { "raw": "{{baseUrl}}/todos/1", "host": ["{{baseUrl}}"], "path": ["todos", "1"] }
+      }
+    },
+    {
+      "name": "Update Todo",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-API-KEY", "value": "{{apiKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Buy milk and eggs\",\n  \"completed\": true\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/todos/1", "host": ["{{baseUrl}}"], "path": ["todos", "1"] }
+      }
+    },
+    {
+      "name": "Delete Todo",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "X-API-KEY", "value": "{{apiKey}}" }],
+        "url": { "raw": "{{baseUrl}}/todos/1", "host": ["{{baseUrl}}"], "path": ["todos", "1"] }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "apiKey", "value": "change-me-to-a-strong-key" }
+  ]
+}
