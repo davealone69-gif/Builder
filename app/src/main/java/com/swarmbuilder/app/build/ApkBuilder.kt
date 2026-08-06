@@ -17,6 +17,11 @@ import java.io.IOException
  *
  * The built APK is copied to the app's private files directory so it can be
  * shared via [FileProvider]. Build logs are streamed through [logs].
+ *
+ * Before each build, previously cached framework artifacts (APK and
+ * intermediate JARs/AARs) are restored from [LastApkCache] so that Gradle
+ * can perform incremental compilation.  After a successful build the new
+ * artifacts are saved back to the cache for the *next* run.
  */
 class ApkBuilder(context: Context) {
 
@@ -24,6 +29,9 @@ class ApkBuilder(context: Context) {
     private val _logs = MutableSharedFlow<SwarmLog>(replay = 64)
 
     private val appContext = context.applicationContext
+
+    /** Persistent cache for framework artifacts from the last successful APK build. */
+    private val lastApkCache = LastApkCache(appContext)
 
     /**
      * Runs `./gradlew assembleDebug` in [projectDir].
@@ -40,6 +48,11 @@ class ApkBuilder(context: Context) {
             )
         }
         gradlew.setExecutable(true)
+
+        // Restore framework artifacts from the last APK build (if available).
+        // This enables incremental Gradle compilation without hard-failing when
+        // no previous build exists.
+        lastApkCache.restoreFrameworks(projectDir) { message -> emit(message) }
 
         val outputDir = File(appContext.filesDir, "apks").also { it.mkdirs() }
         val apkName = "${spec.appName.replace(Regex("[^A-Za-z0-9_-]"), "-")}-debug.apk"
@@ -92,6 +105,9 @@ class ApkBuilder(context: Context) {
 
         builtApk.copyTo(targetApk, overwrite = true)
         emit("APK ready: ${targetApk.absolutePath}", LogLevel.SUCCESS)
+
+        // Save framework artifacts from this successful build for the next run.
+        lastApkCache.saveFrameworks(projectDir) { message -> emit(message) }
 
         BuildResult(
             success = true,
