@@ -3,4 +3,79 @@ plugins {
     id 'com.android.application' version '8.2.2' apply false
     id 'com.android.library' version '8.2.2' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+}Firecrawl Agent Avatar
+Firecrawl Agent
+Open menu
+
+The assistant said:
+👋 Hi there!
+
+How can I help you today? 🔥
+
+You said:
+codex mcp add firecrawl \
+  --url https://mcp.firecrawl.dev/v2/mcp-oauth
+codex mcp login firecrawl
+The assistant said:
+Yes, that is the right approach for an interactive Codex MCP connection:
+
+codex mcp add firecrawl \
+  --url https://mcp.firecrawl.dev/v2/mcp-oauth
+
+codex mcp login firecrawl
+Then:
+
+Complete the Firecrawl sign-in and team authorization in your browser.
+Restart Codex if needed.
+Run /mcp inside Codex to verify that Firecrawl is connected.
+This OAuth setup uses short-lived, resource-bound tokens, so you do not need to place your Firecrawl API key in the URL. See the Codex setup guide for more details.
+
+11 minutes ago
+
+
+You said:
+https://github.com/features/ai/github-app?utm_source=mobile-copilot-app&utm_medium=product&utm_campaign=github-app-cli-Q1-push
+The assistant said:
+What would you like to do with this GitHub page?
+
+I can help you scrape it into Markdown, extract specific details, or explain how to use Firecrawl with it.
+
+1 minute ago
+
+
+You said:
+Fix
+The assistant said:
+What would you like fixed: the Firecrawl MCP setup, or something on the GitHub page?
+
+Please share the exact error message or the command you are trying to run.
+
+Just now
+
+
+You said:
+Fix gradle 
+The assistant said:
+For a Spring Boot project using Firecrawl, add the Java SDK to your Gradle build:
+
+build.gradle.kts
+
+plugins {
+    java
+    id("org.springframework.boot") version "3.0.0"
+    id("io.spring.dependency-management") version "1.1.0"
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("com.firecrawl:firecrawl-java:1.2.0")
 }
