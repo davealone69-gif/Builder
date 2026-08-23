@@ -135,8 +135,9 @@ class LlmClient(private val settings: UserSettings) {
 
     companion object {
         fun defaultModelFor(provider: LlmProvider): String = when (provider) {
-            // Current Groq production model, replacing the retired llama3-70b-8192 ID.
-            LlmProvider.GROQ -> "llama-3.3-70b-versatile"
+            // Groq shut down llama-3.3-70b-versatile on 2026-08-16.
+            // GPT-OSS 120B is the current recommended replacement.
+            LlmProvider.GROQ -> "openai/gpt-oss-120b"
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> "llama3"
