@@ -13,15 +13,13 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/** Low-level client for the configured LLM provider. */
+/** Low-level LLM client designed to survive free-tier rate limits. */
 class LlmClient(private val settings: UserSettings) {
-
     private val http = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(180, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
-
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
     suspend fun complete(
@@ -39,12 +37,7 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    private suspend fun groqComplete(
-        prompt: String,
-        system: String,
-        model: String,
-        maxOutputTokens: Int
-    ): String {
+    private suspend fun groqComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
         val body = JSONObject().apply {
             put("model", model)
             put("messages", JSONArray().apply {
@@ -55,13 +48,10 @@ class LlmClient(private val settings: UserSettings) {
             put("temperature", 0.2)
             put("reasoning_effort", "low")
         }.toString().toRequestBody(jsonMedia)
-
         val req = Request.Builder()
             .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.groqApiKey))
-            .post(body)
-            .build()
-
+            .post(body).build()
         return executeAndExtractContentWithRetry(req)
     }
 
@@ -74,27 +64,18 @@ class LlmClient(private val settings: UserSettings) {
                 put("return_full_text", false)
             })
         }.toString().toRequestBody(jsonMedia)
-
         val req = Request.Builder()
             .url("${LlmProvider.HUGGINGFACE.baseUrl}/$model")
             .addHeader("Authorization", bearerToken(settings.huggingFaceToken))
-            .post(body)
-            .build()
-
+            .post(body).build()
         return http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string() ?: throw RuntimeException("Empty HF response")
             if (!resp.isSuccessful) throw RuntimeException("HF error ${resp.code}: $raw")
-            val arr = JSONArray(raw)
-            arr.getJSONObject(0).getString("generated_text")
+            JSONArray(raw).getJSONObject(0).getString("generated_text")
         }
     }
 
-    private suspend fun openRouterComplete(
-        prompt: String,
-        system: String,
-        model: String,
-        maxOutputTokens: Int
-    ): String {
+    private suspend fun openRouterComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
         val body = JSONObject().apply {
             put("model", model)
             put("messages", JSONArray().apply {
@@ -104,14 +85,11 @@ class LlmClient(private val settings: UserSettings) {
             put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
             put("temperature", 0.2)
         }.toString().toRequestBody(jsonMedia)
-
         val req = Request.Builder()
             .url("${LlmProvider.OPENROUTER.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.openRouterApiKey))
             .addHeader("HTTP-Referer", "https://github.com/davealone69-gif/Builder")
-            .post(body)
-            .build()
-
+            .post(body).build()
         return executeAndExtractContentWithRetry(req)
     }
 
@@ -121,12 +99,9 @@ class LlmClient(private val settings: UserSettings) {
             put("prompt", "$system\n\n$prompt")
             put("stream", false)
         }.toString().toRequestBody(jsonMedia)
-
         val req = Request.Builder()
             .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/generate")
-            .post(body)
-            .build()
-
+            .post(body).build()
         return http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string() ?: throw RuntimeException("Empty Ollama response")
             if (!resp.isSuccessful) throw RuntimeException("Ollama error ${resp.code}: $raw")
@@ -134,9 +109,13 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
+    /**
+     * Free-tier friendly retry: a 429 is a temporary scheduling condition,
+     * not a pipeline failure. Wait for the provider's advertised reset time.
+     */
     private suspend fun executeAndExtractContentWithRetry(req: Request): String {
         var lastError = "Unknown LLM error"
-        repeat(3) { attempt ->
+        repeat(8) { attempt ->
             http.newCall(req).execute().use { resp ->
                 val raw = resp.body?.string() ?: ""
                 if (resp.isSuccessful) {
@@ -146,15 +125,12 @@ class LlmClient(private val settings: UserSettings) {
                         .getJSONObject("message")
                         .getString("content")
                 }
-
                 lastError = "HTTP ${resp.code}: $raw"
-                if (resp.code == 429 && attempt < 2) {
+                if (resp.code == 429 && attempt < 7) {
                     val retryAfter = resp.header("retry-after")?.toDoubleOrNull()
-                    val waitMs = ((retryAfter ?: 8.0) * 1000.0)
-                        .coerceIn(2000.0, 15000.0)
-                        .toLong()
-                    // Release the IO thread while Groq's TPM window resets.
-                    delay(waitMs)
+                    val waitSeconds = (retryAfter ?: 10.0 + attempt * 5.0)
+                        .coerceIn(2.0, 65.0)
+                    delay((waitSeconds * 1000.0).toLong())
                     return@use
                 }
                 throw RuntimeException(lastError)
@@ -167,8 +143,6 @@ class LlmClient(private val settings: UserSettings) {
 
     companion object {
         fun defaultModelFor(provider: LlmProvider): String = when (provider) {
-            // GPT-OSS 20B is current, fast, supports JSON/reasoning and is a better
-            // default for the Builder's multi-stage pipeline than a 120B model.
             LlmProvider.GROQ -> "openai/gpt-oss-20b"
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
