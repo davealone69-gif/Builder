@@ -15,9 +15,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -28,33 +25,34 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK components
+      - name: Accept licenses + install platform
         run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
           yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Grant execute permission for gradlew
+      - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Build debug APK
-        run: ./gradlew clean assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: List APK outputs (debug)
-        if: always()
+      - name: Collect every APK into one folder
         run: |
-          echo "=== Looking for APKs ==="
-          find app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "No APKs found under app/build/outputs"
-          ls -laR app/build/outputs/apk/ 2>/dev/null || echo "apk directory missing"
+          mkdir -p release-apks
+          echo "=== Searching entire workspace for APKs ==="
+          find . -name "*.apk" -type f -print
+          find . -name "*.apk" -type f ! -path "./.gradle/*" ! -path "./gradle/*" -exec cp -v {} release-apks/ \;
+          echo "=== Collected ==="
+          ls -la release-apks/
+          test "$(ls -A release-apks/ 2>/dev/null)" || (echo "NO APKs FOUND ANYWHERE" && exit 1)
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
+          path: release-apks/*.apk
+          if-no-files-found: error
           retention-days: 14

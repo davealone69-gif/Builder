@@ -39,38 +39,33 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Build APKs
-        run: |
-          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace --info 2>&1 | tee build.log
-          echo "EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+        run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
-      - name: Show build log tail on failure
-        if: failure()
-        run: tail -n 200 build.log || true
-
-      - name: Find and list all APKs
-        if: always()
+      - name: Collect every APK into one folder
         run: |
-          echo "=== Searching for APKs ==="
-          find . -name "*.apk" -type f 2>/dev/null | head -50
-          mkdir -p artifacts
-          find app/build/outputs -name "*.apk" -type f -exec cp {} artifacts/ \; 2>/dev/null || true
-          ls -la artifacts/ || echo "No APKs copied"
+          mkdir -p release-apks
+          echo "=== Searching entire workspace for APKs ==="
+          find . -name "*.apk" -type f -print
+          # Copy every APK found (except the gradle wrapper / caches)
+          find . -name "*.apk" -type f ! -path "./.gradle/*" ! -path "./gradle/*" -exec cp -v {} release-apks/ \;
+          echo "=== Collected ==="
+          ls -la release-apks/
+          # Fail only if nothing was collected
+          test "$(ls -A release-apks/ 2>/dev/null)" || (echo "NO APKs FOUND ANYWHERE" && exit 1)
 
       - name: Upload APKs as artifacts
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: swarmbuilder-apks
-          path: artifacts/*.apk
-          if-no-files-found: warn
+          path: release-apks/*.apk
+          if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub Release
-        if: success()
+      - name: Create GitHub Release with APKs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v1.0.{0}', github.run_number) || github.ref_name }}
           name: SwarmBuilder ${{ github.event_name == 'workflow_dispatch' && format('build {0}', github.run_number) || github.ref_name }}
           generate_release_notes: true
-          files: artifacts/*.apk
+          files: release-apks/*.apk
           fail_on_unmatched_files: false
