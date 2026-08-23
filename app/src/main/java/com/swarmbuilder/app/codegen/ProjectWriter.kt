@@ -7,36 +7,30 @@ import java.io.File
 
 /**
  * Writes the LLM-generated [SourceFile] list onto disk inside a temporary
- * project directory and ensures essential scaffold files are present.
+ * project directory and ensures the generated project has a usable Gradle
+ * wrapper scaffold.
  */
 class ProjectWriter(private val context: Context) {
 
-    /**
-     * Write all [files] into a subdirectory of the app's cache dir named after [spec].
-     * Returns the root [File] of the written project.
-     */
     fun write(spec: AppSpec, files: List<SourceFile>): File {
         val safeAppName = spec.appName.replace(Regex("[^A-Za-z0-9_]"), "_")
         val projectDir = File(context.cacheDir, "projects/$safeAppName").also { it.mkdirs() }
 
-        // Write LLM-generated files
         files.forEach { sf ->
             val target = File(projectDir, sf.relativePath)
             target.parentFile?.mkdirs()
             target.writeText(sf.content)
         }
 
-        // Ensure mandatory scaffold files exist
         ensureGradleWrapper(projectDir)
         ensureLocalProperties(projectDir)
 
         return projectDir
     }
 
-    // ── Scaffold helpers ──────────────────────────────────────────────────────
-
     private fun ensureGradleWrapper(dir: File) {
         val wrapperDir = File(dir, "gradle/wrapper").also { it.mkdirs() }
+
         val props = File(wrapperDir, "gradle-wrapper.properties")
         if (!props.exists()) {
             props.writeText(
@@ -49,33 +43,43 @@ class ProjectWriter(private val context: Context) {
                 """.trimIndent()
             )
         }
-        val gradlew = File(dir, "gradlew")
-        if (!gradlew.exists()) {
-            gradlew.writeText(GRADLEW_SCRIPT)
-            gradlew.setExecutable(true)
+
+        // The LLM normally cannot generate a binary wrapper JAR. Bundle the
+        // known-good wrapper in the Builder APK and copy it into the project.
+        val wrapperJar = File(wrapperDir, "gradle-wrapper.jar")
+        if (!wrapperJar.exists() || wrapperJar.length() < 10_000L) {
+            context.assets.open("gradle-wrapper.jar").use { input ->
+                wrapperJar.outputStream().use { output -> input.copyTo(output) }
+            }
         }
+
+        val gradlew = File(dir, "gradlew")
+        if (!gradlew.exists() || gradlew.length() < 100L) {
+            gradlew.writeText(GRADLEW_SCRIPT)
+        }
+        gradlew.setExecutable(true)
     }
 
     private fun ensureLocalProperties(dir: File) {
         val lp = File(dir, "local.properties")
-        if (!lp.exists()) {
-            // Point to the device's SDK location
-            val sdkPath = "/opt/android-sdk"
+        if (lp.exists()) return
+
+        val sdkPath = sequenceOf(
+            System.getenv("ANDROID_SDK_ROOT"),
+            System.getenv("ANDROID_HOME")
+        ).firstOrNull { !it.isNullOrBlank() }
+
+        if (!sdkPath.isNullOrBlank()) {
             lp.writeText("sdk.dir=$sdkPath\n")
         }
     }
 
     companion object {
-        private val GRADLEW_SCRIPT = """
+        private const val GRADLEW_SCRIPT = """
             #!/usr/bin/env sh
-            ##############################################################################
-            ## Gradle start up script for UN*X
-            ##############################################################################
-            APP_NAME="Gradle"
-            APP_BASE_NAME=`basename "${'$'}0"`
-            APP_HOME=`dirname "${'$'}0"`
-            CLASSPATH=${'$'}APP_HOME/gradle/wrapper/gradle-wrapper.jar
-            exec java -classpath "${'$'}CLASSPATH" org.gradle.wrapper.GradleWrapperMain "${'$'}@"
-        """.trimIndent()
+            APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+            CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+            exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+        """
     }
 }
