@@ -11,6 +11,7 @@ import com.swarmbuilder.app.SwarmBuilderApp
 import com.swarmbuilder.app.build.ApkBuilder
 import com.swarmbuilder.app.codegen.ProjectWriter
 import com.swarmbuilder.app.github.GitHubPublisher
+import com.swarmbuilder.app.models.AppSpec
 import com.swarmbuilder.app.models.BuildResult
 import com.swarmbuilder.app.models.LogLevel
 import com.swarmbuilder.app.models.SwarmLog
@@ -20,26 +21,20 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.io.File
 
 class BuildViewModel(application: Application) : AndroidViewModel(application) {
-
     private val app get() = getApplication<SwarmBuilderApp>()
-
     private val _logs = MutableSharedFlow<SwarmLog>(replay = 256)
     val logs: SharedFlow<SwarmLog> = _logs
-
     private val _phase = MutableLiveData("Waiting…")
     val phase: LiveData<String> = _phase
-
     private val _isRunning = MutableLiveData(false)
     val isRunning: LiveData<Boolean> = _isRunning
-
     private val _apkPath = MutableLiveData<String?>(null)
     val apkPath: LiveData<String?> = _apkPath
-
     private val _githubUrl = MutableLiveData<String?>(null)
     val githubUrl: LiveData<String?> = _githubUrl
-
     private val _errorMessage = MutableLiveData<String?>(null)
     val errorMessage: LiveData<String?> = _errorMessage
 
@@ -53,51 +48,71 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
             val orchestrator = SwarmOrchestrator(settings)
             val apkBuilder = ApkBuilder(app)
             val writer = ProjectWriter(app)
-
-            // Forward swarm logs
             orchestrator.logs.onEach { _logs.emit(it) }.launchIn(this)
             apkBuilder.logs.onEach { _logs.emit(it) }.launchIn(this)
 
             try {
-                // 1. Generate code
                 _phase.postValue("🤖 Swarm generating code…")
-                emit("Starting swarm for prompt: $prompt")
-                val files = orchestrator.run(prompt)
+                emit("Starting cost-aware swarm for prompt: $prompt")
+                var files = orchestrator.run(prompt)
 
-                // 2. Write project to disk
-                _phase.postValue("💾 Writing project files…")
-                emit("Writing ${files.size} files to disk…")
                 val appName = files.find { it.relativePath.contains("settings.gradle") }
-                    ?.content?.lines()
-                    ?.firstOrNull { it.contains("rootProject.name") }
+                    ?.content?.lines()?.firstOrNull { it.contains("rootProject.name") }
                     ?.substringAfter("=")?.trim()?.trim('"') ?: "GeneratedApp"
-                val spec = com.swarmbuilder.app.models.AppSpec(
+                val spec = AppSpec(
                     prompt = prompt,
                     appName = appName,
                     packageName = "com.generated.app"
                 )
-                val projectDir = writer.write(spec, files)
 
-                // 3. Build APK
-                _phase.postValue("🔨 Building APK…")
-                val buildResult = apkBuilder.build(spec, projectDir)
-                if (buildResult.apkPath != null) {
-                    _apkPath.postValue(buildResult.apkPath)
+                // Compiler-first loop. AI is called again only after real Gradle failure.
+                val maxRepairPasses = 8
+                var repairPass = 0
+                var projectDir: File? = null
+                var buildResult: BuildResult
+
+                while (true) {
+                    _phase.postValue(
+                        if (repairPass == 0) "🔨 Building APK…"
+                        else "🔧 Compiler repair $repairPass/$maxRepairPasses…"
+                    )
+                    projectDir = writer.write(spec, files)
+                    buildResult = apkBuilder.build(spec, projectDir)
+                    if (buildResult.success) break
+
+                    if (repairPass >= maxRepairPasses) {
+                        throw IllegalStateException(
+                            "Build still failing after $maxRepairPasses compiler repair passes.\n" +
+                                (buildResult.errorMessage ?: "Unknown Gradle error")
+                        )
+                    }
+
+                    repairPass++
+                    emit(
+                        "Gradle failed. Sending actual compiler diagnostics to Repair pass $repairPass.",
+                        LogLevel.WARNING
+                    )
+                    files = orchestrator.repair(
+                        spec = spec,
+                        files = files,
+                        buildError = buildResult.errorMessage ?: "Unknown Gradle failure",
+                        attempt = repairPass
+                    )
                 }
 
-                // 4. Push to GitHub (only if credentials present)
+                buildResult.apkPath?.let { _apkPath.postValue(it) }
+
                 if (settings.githubToken.isNotBlank() && settings.githubUsername.isNotBlank()) {
-                    _phase.postValue("🚀 Pushing to GitHub…")
+                    _phase.postValue("🚀 Pushing working project to GitHub…")
                     val publisher = GitHubPublisher(settings)
                     publisher.logs.onEach { _logs.emit(it) }.launchIn(this)
-                    val url = publisher.publish(spec, projectDir, buildResult)
+                    val url = publisher.publish(spec, projectDir!!, buildResult)
                     _githubUrl.postValue(url)
                 } else {
                     emit("GitHub credentials not set – skipping push", LogLevel.WARNING)
                 }
 
-                _phase.postValue("✅ Done!")
-
+                _phase.postValue("✅ APK built successfully")
             } catch (e: Exception) {
                 val msg = "Pipeline error: ${e.message}"
                 emit(msg, LogLevel.ERROR)
