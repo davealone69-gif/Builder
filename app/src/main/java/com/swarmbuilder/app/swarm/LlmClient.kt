@@ -12,10 +12,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/**
- * Low-level client that sends a chat completion request to a free LLM provider
- * and returns the assistant's text response.
- */
+/** Low-level client for the configured LLM provider. */
 class LlmClient(private val settings: UserSettings) {
 
     private val http = OkHttpClient.Builder()
@@ -24,9 +21,8 @@ class LlmClient(private val settings: UserSettings) {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
+    private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
-    /** Send [prompt] to the configured provider and return the text reply. */
     suspend fun complete(
         prompt: String,
         systemPrompt: String = "You are an expert Android developer.",
@@ -41,8 +37,6 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    // ── Groq ──────────────────────────────────────────────────────────────────
-
     private fun groqComplete(prompt: String, system: String, model: String): String {
         val body = JSONObject().apply {
             put("model", model)
@@ -52,7 +46,7 @@ class LlmClient(private val settings: UserSettings) {
             })
             put("max_tokens", 4096)
             put("temperature", 0.2)
-        }.toString().toRequestBody(JSON_MEDIA)
+        }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
             .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
@@ -63,8 +57,6 @@ class LlmClient(private val settings: UserSettings) {
         return executeAndExtractContent(req)
     }
 
-    // ── Hugging Face ──────────────────────────────────────────────────────────
-
     private fun hfComplete(prompt: String, model: String): String {
         val body = JSONObject().apply {
             put("inputs", prompt)
@@ -73,7 +65,7 @@ class LlmClient(private val settings: UserSettings) {
                 put("temperature", 0.2)
                 put("return_full_text", false)
             })
-        }.toString().toRequestBody(JSON_MEDIA)
+        }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
             .url("${LlmProvider.HUGGINGFACE.baseUrl}/$model")
@@ -89,8 +81,6 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    // ── OpenRouter ────────────────────────────────────────────────────────────
-
     private fun openRouterComplete(prompt: String, system: String, model: String): String {
         val body = JSONObject().apply {
             put("model", model)
@@ -98,26 +88,24 @@ class LlmClient(private val settings: UserSettings) {
                 put(JSONObject().apply { put("role", "system"); put("content", system) })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
             })
-        }.toString().toRequestBody(JSON_MEDIA)
+        }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
             .url("${LlmProvider.OPENROUTER.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.openRouterApiKey))
-            .addHeader("HTTP-Referer", "https://github.com/swarmbuilder")
+            .addHeader("HTTP-Referer", "https://github.com/davealone69-gif/Builder")
             .post(body)
             .build()
 
         return executeAndExtractContent(req)
     }
 
-    // ── Ollama local ──────────────────────────────────────────────────────────
-
     private fun ollamaComplete(prompt: String, system: String, model: String): String {
         val body = JSONObject().apply {
             put("model", model)
             put("prompt", "$system\n\n$prompt")
             put("stream", false)
-        }.toString().toRequestBody(JSON_MEDIA)
+        }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
             .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/generate")
@@ -131,30 +119,24 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private fun executeAndExtractContent(req: Request): String {
         return http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string() ?: throw RuntimeException("Empty response")
             if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}: $raw")
-            val json = JSONObject(raw)
-            json.getJSONArray("choices")
+            JSONObject(raw)
+                .getJSONArray("choices")
                 .getJSONObject(0)
                 .getJSONObject("message")
                 .getString("content")
         }
     }
 
-    // ── Auth helper ──────────────────────────────────────────────────────────
-
-    private fun bearerToken(key: String): String = buildString {
-        append("Bearer ")
-        append(key)
-    }
+    private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
         fun defaultModelFor(provider: LlmProvider): String = when (provider) {
-            LlmProvider.GROQ -> "llama3-70b-8192"
+            // Current Groq production model, replacing the retired llama3-70b-8192 ID.
+            LlmProvider.GROQ -> "llama-3.3-70b-versatile"
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> "llama3"
