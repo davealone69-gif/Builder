@@ -1,1 +1,15 @@
+name: CI Status
 
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Note
+        run: echo "Main build is handled by the Build APK workflow. This file prevents empty workflow failures."
