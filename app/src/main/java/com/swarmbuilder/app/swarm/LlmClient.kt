@@ -3,6 +3,7 @@ package com.swarmbuilder.app.swarm
 import com.swarmbuilder.app.models.LlmProvider
 import com.swarmbuilder.app.models.UserSettings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -17,7 +18,7 @@ class LlmClient(private val settings: UserSettings) {
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
+        .readTimeout(180, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
@@ -27,25 +28,32 @@ class LlmClient(private val settings: UserSettings) {
         prompt: String,
         systemPrompt: String = "You are an expert Android developer.",
         provider: LlmProvider = settings.preferredProvider,
-        modelId: String = defaultModelFor(provider)
+        modelId: String = defaultModelFor(provider),
+        maxOutputTokens: Int = 2048
     ): String = withContext(Dispatchers.IO) {
         when (provider) {
-            LlmProvider.GROQ -> groqComplete(prompt, systemPrompt, modelId)
-            LlmProvider.HUGGINGFACE -> hfComplete(prompt, modelId)
-            LlmProvider.OPENROUTER -> openRouterComplete(prompt, systemPrompt, modelId)
+            LlmProvider.GROQ -> groqComplete(prompt, systemPrompt, modelId, maxOutputTokens)
+            LlmProvider.HUGGINGFACE -> hfComplete(prompt, modelId, maxOutputTokens)
+            LlmProvider.OPENROUTER -> openRouterComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.OLLAMA_LOCAL -> ollamaComplete(prompt, systemPrompt, modelId)
         }
     }
 
-    private fun groqComplete(prompt: String, system: String, model: String): String {
+    private suspend fun groqComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
         val body = JSONObject().apply {
             put("model", model)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply { put("role", "system"); put("content", system) })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
             })
-            put("max_tokens", 4096)
+            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
             put("temperature", 0.2)
+            put("reasoning_effort", "low")
         }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
@@ -54,14 +62,14 @@ class LlmClient(private val settings: UserSettings) {
             .post(body)
             .build()
 
-        return executeAndExtractContent(req)
+        return executeAndExtractContentWithRetry(req)
     }
 
-    private fun hfComplete(prompt: String, model: String): String {
+    private suspend fun hfComplete(prompt: String, model: String, maxOutputTokens: Int): String {
         val body = JSONObject().apply {
             put("inputs", prompt)
             put("parameters", JSONObject().apply {
-                put("max_new_tokens", 2048)
+                put("max_new_tokens", maxOutputTokens.coerceIn(512, 2048))
                 put("temperature", 0.2)
                 put("return_full_text", false)
             })
@@ -81,13 +89,20 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    private fun openRouterComplete(prompt: String, system: String, model: String): String {
+    private suspend fun openRouterComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
         val body = JSONObject().apply {
             put("model", model)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply { put("role", "system"); put("content", system) })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
             })
+            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
+            put("temperature", 0.2)
         }.toString().toRequestBody(jsonMedia)
 
         val req = Request.Builder()
@@ -97,7 +112,7 @@ class LlmClient(private val settings: UserSettings) {
             .post(body)
             .build()
 
-        return executeAndExtractContent(req)
+        return executeAndExtractContentWithRetry(req)
     }
 
     private fun ollamaComplete(prompt: String, system: String, model: String): String {
@@ -119,25 +134,42 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    private fun executeAndExtractContent(req: Request): String {
-        return http.newCall(req).execute().use { resp ->
-            val raw = resp.body?.string() ?: throw RuntimeException("Empty response")
-            if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}: $raw")
-            JSONObject(raw)
-                .getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content")
+    private suspend fun executeAndExtractContentWithRetry(req: Request): String {
+        var lastError = "Unknown LLM error"
+        repeat(3) { attempt ->
+            http.newCall(req).execute().use { resp ->
+                val raw = resp.body?.string() ?: ""
+                if (resp.isSuccessful) {
+                    return JSONObject(raw)
+                        .getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content")
+                }
+
+                lastError = "HTTP ${resp.code}: $raw"
+                if (resp.code == 429 && attempt < 2) {
+                    val retryAfter = resp.header("retry-after")?.toDoubleOrNull()
+                    val waitMs = ((retryAfter ?: 8.0) * 1000.0)
+                        .coerceIn(2000.0, 15000.0)
+                        .toLong()
+                    // Release the IO thread while Groq's TPM window resets.
+                    delay(waitMs)
+                    return@use
+                }
+                throw RuntimeException(lastError)
+            }
         }
+        throw RuntimeException(lastError)
     }
 
     private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
         fun defaultModelFor(provider: LlmProvider): String = when (provider) {
-            // Groq shut down llama-3.3-70b-versatile on 2026-08-16.
-            // GPT-OSS 120B is the current recommended replacement.
-            LlmProvider.GROQ -> "openai/gpt-oss-120b"
+            // GPT-OSS 20B is current, fast, supports JSON/reasoning and is a better
+            // default for the Builder's multi-stage pipeline than a 120B model.
+            LlmProvider.GROQ -> "openai/gpt-oss-20b"
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> "llama3"
