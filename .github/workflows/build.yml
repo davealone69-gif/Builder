@@ -28,8 +28,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK platform
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager --licenses || true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -40,10 +42,19 @@ jobs:
       - name: Build debug APK
         run: ./gradlew clean assembleDebug --no-daemon --stacktrace
 
+      - name: List APK outputs (debug)
+        if: always()
+        run: |
+          echo "=== Looking for APKs ==="
+          find app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "No APKs found under app/build/outputs"
+          ls -laR app/build/outputs/apk/ 2>/dev/null || echo "apk directory missing"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 7
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+          retention-days: 14
