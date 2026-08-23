@@ -50,9 +50,7 @@ class ApkBuilder(context: Context) {
         gradlew.setExecutable(true)
 
         // Restore framework artifacts from the last APK build (if available).
-        // This enables incremental Gradle compilation without hard-failing when
-        // no previous build exists.
-        lastApkCache.restoreFrameworks(projectDir) { message -> emit(message) }
+        lastApkCache.restoreFrameworks(projectDir) { message -> emitSync(message) }
 
         val outputDir = File(appContext.filesDir, "apks").also { it.mkdirs() }
         val apkName = "${spec.appName.replace(Regex("[^A-Za-z0-9_-]"), "-")}-debug.apk"
@@ -82,7 +80,7 @@ class ApkBuilder(context: Context) {
                     line.startsWith("w:") -> LogLevel.WARNING
                     else -> LogLevel.INFO
                 }
-                emit(line, level)
+                emitSync(line, level)
             }
         }
 
@@ -107,7 +105,7 @@ class ApkBuilder(context: Context) {
         emit("APK ready: ${targetApk.absolutePath}", LogLevel.SUCCESS)
 
         // Save framework artifacts from this successful build for the next run.
-        lastApkCache.saveFrameworks(projectDir) { message -> emit(message) }
+        lastApkCache.saveFrameworks(projectDir) { message -> emitSync(message) }
 
         BuildResult(
             success = true,
@@ -119,6 +117,11 @@ class ApkBuilder(context: Context) {
     private fun findBuiltApk(projectDir: File): File? {
         val outputs = File(projectDir, "app/build/outputs/apk/debug")
         return outputs.listFiles { _, name -> name.endsWith(".apk") }?.firstOrNull()
+    }
+
+    /** Non-suspending emit for use inside non-coroutine lambdas (e.g. Process stream callbacks). */
+    private fun emitSync(message: String, level: LogLevel = LogLevel.INFO) {
+        _logs.tryEmit(SwarmLog("Builder", message, level))
     }
 
     private suspend fun emit(message: String, level: LogLevel = LogLevel.INFO) {

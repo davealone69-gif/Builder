@@ -75,11 +75,12 @@ class ProjectWriter(private val context: Context) {
     }
 
     companion object {
-        private const val GRADLEW_SCRIPT = """
+        // Not const — contains shell $ variables that must not be treated as Kotlin templates.
+        private val GRADLEW_SCRIPT = """
             #!/usr/bin/env sh
             APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
             CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
             exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-        """
+        """.trimIndent()
     }
 }
