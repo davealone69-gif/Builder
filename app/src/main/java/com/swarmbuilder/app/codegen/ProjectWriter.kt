@@ -75,12 +75,12 @@ class ProjectWriter(private val context: Context) {
     }
 
     companion object {
-        // Not const — contains shell $ variables that must not be treated as Kotlin templates.
+        // Escape shell variables so Kotlin does not interpolate them at compile time.
         private val GRADLEW_SCRIPT = """
             #!/usr/bin/env sh
-            APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-            CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-            exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+            APP_HOME=${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)
+            CLASSPATH="${'$'}APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+            exec java -classpath "${'$'}CLASSPATH" org.gradle.wrapper.GradleWrapperMain "${'$'}@"
         """.trimIndent()
     }
 }
