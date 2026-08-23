@@ -9,11 +9,11 @@ import kotlinx.coroutines.flow.SharedFlow
  * Android app from a natural-language prompt.
  *
  * Agent pipeline:
- *   1. ARCHITECT  – analyses the prompt and returns a JSON spec + file list
- *   2. CODER      – generates source code for each file in the spec
- *   3. REVIEWER   – validates/fixes generated code
- *   4. BUILDER    – triggers the on-device Gradle build
- *   5. PUBLISHER  – pushes the project to GitHub
+ *   1. ARCHITECT – analyses the prompt and returns a compact JSON spec
+ *   2. CODER – generates source code for the requested app
+ *   3. REVIEWER – validates/fixes generated code
+ *   4. BUILDER – triggers the on-device Gradle build
+ *   5. PUBLISHER – pushes the project to GitHub
  */
 class SwarmOrchestrator(
     private val settings: UserSettings,
@@ -27,16 +27,9 @@ class SwarmOrchestrator(
         _logs.emit(SwarmLog(agent.name, msg, level))
     }
 
-    // ── Public entry point ────────────────────────────────────────────────────
-
-    /**
-     * Run the full swarm pipeline for the given [prompt].
-     * Returns a list of [SourceFile] objects that represent the generated app.
-     */
     suspend fun run(prompt: String): List<SourceFile> {
         val agents = buildAgents()
 
-        // Step 1 – Architect
         val architect = agents.first { it.role == AgentRole.ARCHITECT }
         architect.status = AgentStatus.RUNNING
         log(architect, "Analysing prompt and designing app architecture…")
@@ -44,7 +37,6 @@ class SwarmOrchestrator(
         architect.status = AgentStatus.DONE
         log(architect, "Architecture ready: ${spec.appName}", LogLevel.SUCCESS)
 
-        // Step 2 – Coder
         val coder = agents.first { it.role == AgentRole.CODER }
         coder.status = AgentStatus.RUNNING
         log(coder, "Generating source files…")
@@ -52,7 +44,6 @@ class SwarmOrchestrator(
         coder.status = AgentStatus.DONE
         log(coder, "Generated ${rawFiles.size} source files", LogLevel.SUCCESS)
 
-        // Step 3 – Reviewer
         val reviewer = agents.first { it.role == AgentRole.REVIEWER }
         reviewer.status = AgentStatus.RUNNING
         log(reviewer, "Reviewing generated code…")
@@ -63,25 +54,19 @@ class SwarmOrchestrator(
         return reviewedFiles
     }
 
-    // ── Agent runners ─────────────────────────────────────────────────────────
-
     private suspend fun runArchitect(agent: SwarmAgent, prompt: String): AppSpec {
         val systemPrompt = """
-            You are an expert Android architect. Given a user prompt, return a JSON object with:
-            {
-              "appName": "MyApp",
-              "packageName": "com.example.myapp",
-              "description": "...",
-              "features": ["...", "..."]
-            }
-            Return ONLY valid JSON, no markdown fences.
+            You are an expert Android architect. Given a user prompt, return ONLY valid JSON:
+            {"appName":"MyApp","packageName":"com.example.myapp","description":"...","features":["..."]}
+            Keep the description and feature list concise. No markdown.
         """.trimIndent()
 
         val response = llm.complete(
             prompt = "Design an Android app for: $prompt",
             systemPrompt = systemPrompt,
             provider = agent.provider,
-            modelId = agent.modelId
+            modelId = agent.modelId,
+            maxOutputTokens = 1200
         )
         return parseAppSpec(prompt, response)
     }
@@ -89,14 +74,9 @@ class SwarmOrchestrator(
     private suspend fun runCoder(agent: SwarmAgent, spec: AppSpec): List<SourceFile> {
         val systemPrompt = """
             You are an expert Android developer using Kotlin. Generate complete, compilable source
-            files for an Android app. Return a JSON array where each element is:
-            {
-              "path": "app/src/main/java/com/example/MainActivity.kt",
-              "content": "... full file content ..."
-            }
-            Include: MainActivity.kt, AndroidManifest.xml, activity_main.xml,
-            build.gradle (app), settings.gradle, and any additional files needed.
-            Return ONLY a valid JSON array, no markdown fences or explanation.
+            files. Return ONLY a JSON array of {"path":"...","content":"..."}. No markdown.
+            Prefer a small working project over explanations. Include MainActivity.kt, manifest,
+            Gradle files and only the files required by the requested features.
         """.trimIndent()
 
         val prompt = """
@@ -110,7 +90,8 @@ class SwarmOrchestrator(
             prompt = prompt,
             systemPrompt = systemPrompt,
             provider = agent.provider,
-            modelId = agent.modelId
+            modelId = agent.modelId,
+            maxOutputTokens = 2800
         )
         return parseSourceFiles(response)
     }
@@ -121,11 +102,9 @@ class SwarmOrchestrator(
         files: List<SourceFile>
     ): List<SourceFile> {
         val systemPrompt = """
-            You are a senior Android code reviewer. Given a list of source files for an Android
-            app, review them for correctness, fix any compilation errors, and return the corrected
-            files as a JSON array with the same structure:
-            [{ "path": "...", "content": "..." }]
-            Return ONLY valid JSON, no markdown or explanation.
+            You are a senior Android code reviewer. Fix compilation/correctness problems and return
+            ONLY a JSON array of {"path":"...","content":"..."}. Preserve working files.
+            No markdown or explanation.
         """.trimIndent()
 
         val filesJson = files.joinToString(",\n", "[", "]") { f ->
@@ -136,17 +115,15 @@ class SwarmOrchestrator(
             prompt = "Review and fix these files for app '${spec.appName}':\n$filesJson",
             systemPrompt = systemPrompt,
             provider = agent.provider,
-            modelId = agent.modelId
+            modelId = agent.modelId,
+            maxOutputTokens = 2800
         )
         return try {
             parseSourceFiles(response)
         } catch (e: Exception) {
-            // If reviewer fails, return original files unchanged
             files
         }
     }
-
-    // ── Parsing helpers ───────────────────────────────────────────────────────
 
     private fun parseAppSpec(originalPrompt: String, json: String): AppSpec {
         return try {
@@ -182,8 +159,6 @@ class SwarmOrchestrator(
             }
         }
     }
-
-    // ── Agent factory ─────────────────────────────────────────────────────────
 
     private fun buildAgents(): List<SwarmAgent> {
         val primary = settings.preferredProvider
