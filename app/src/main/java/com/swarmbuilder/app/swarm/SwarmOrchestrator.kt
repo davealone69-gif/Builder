@@ -4,7 +4,7 @@ import com.swarmbuilder.app.models.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
-/** Cost-aware swarm: Architect -> Coder -> real Gradle compiler -> targeted AI repair. */
+/** Cost-aware swarm with compiler-driven repair and resilient LLM response parsing. */
 class SwarmOrchestrator(
     private val settings: UserSettings,
     private val llm: LlmClient = LlmClient(settings)
@@ -16,7 +16,6 @@ class SwarmOrchestrator(
         _logs.emit(SwarmLog(agent.name, msg, level))
     }
 
-    /** First pass uses only Architect + Coder. */
     suspend fun run(prompt: String): List<SourceFile> {
         val agents = buildAgents()
         val architect = agents.first { it.role == AgentRole.ARCHITECT }
@@ -35,7 +34,6 @@ class SwarmOrchestrator(
         return files
     }
 
-    /** Spend another LLM call only after Gradle has actually failed. */
     suspend fun repair(
         spec: AppSpec,
         files: List<SourceFile>,
@@ -66,21 +64,21 @@ class SwarmOrchestrator(
             $filesJson
         """.trimIndent()
 
-        val response = llm.complete(
-            prompt = prompt,
-            systemPrompt = system,
-            provider = agent.provider,
-            modelId = agent.modelId,
-            maxOutputTokens = 2200
-        )
         return try {
+            val response = llm.complete(
+                prompt = prompt,
+                systemPrompt = system,
+                provider = agent.provider,
+                modelId = agent.modelId,
+                maxOutputTokens = 2200
+            )
             parseSourceFiles(response).also {
                 agent.status = AgentStatus.DONE
                 log(agent, "Repair pass $attempt produced ${it.size} files", LogLevel.SUCCESS)
             }
         } catch (e: Exception) {
             agent.status = AgentStatus.ERROR
-            log(agent, "Invalid repair response: ${e.message}", LogLevel.ERROR)
+            log(agent, "Repair response failed: ${e.message}. Keeping last known-good files.", LogLevel.WARNING)
             files
         }
     }
@@ -123,26 +121,50 @@ class SwarmOrchestrator(
         return parseSourceFiles(response)
     }
 
-    private fun parseAppSpec(originalPrompt: String, json: String): AppSpec = try {
-        val obj = org.json.JSONObject(json.trim())
-        AppSpec(
-            prompt = originalPrompt,
-            appName = obj.optString("appName", "MyApp"),
-            packageName = obj.optString("packageName", "com.example.myapp"),
-            description = obj.optString("description", ""),
-            features = buildList {
-                val arr = obj.optJSONArray("features") ?: return@buildList
-                for (i in 0 until arr.length()) add(arr.getString(i))
-            }
-        )
-    } catch (_: Exception) {
-        AppSpec(originalPrompt, "MyApp", "com.example.myapp", originalPrompt)
+    private fun parseAppSpec(originalPrompt: String, json: String): AppSpec {
+        return try {
+            val cleaned = recoverJsonObject(json)
+            val obj = org.json.JSONObject(cleaned)
+            AppSpec(
+                prompt = originalPrompt,
+                appName = obj.optString("appName", "MyApp"),
+                packageName = obj.optString("packageName", "com.example.myapp"),
+                description = obj.optString("description", ""),
+                features = buildList {
+                    val arr = obj.optJSONArray("features") ?: return@buildList
+                    for (i in 0 until arr.length()) add(arr.getString(i))
+                }
+            )
+        } catch (_: Exception) {
+            AppSpec(originalPrompt, "MyApp", "com.example.myapp", originalPrompt)
+        }
+    }
+
+    /** Recover JSON accidentally wrapped in markdown or surrounded by model commentary. */
+    private fun recoverJsonObject(raw: String): String {
+        val cleaned = raw.trim()
+            .removePrefix("```json")
+            .removePrefix("```JSON")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+        val start = cleaned.indexOf('{')
+        val end = cleaned.lastIndexOf('}')
+        if (start >= 0 && end > start) return cleaned.substring(start, end + 1)
+        throw IllegalArgumentException("No JSON object found in model response")
     }
 
     private fun parseSourceFiles(json: String): List<SourceFile> {
         val cleaned = json.trim()
-            .removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
-        val arr = org.json.JSONArray(cleaned)
+            .removePrefix("```json")
+            .removePrefix("```JSON")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+        val start = cleaned.indexOf('[')
+        val end = cleaned.lastIndexOf(']')
+        if (start < 0 || end <= start) throw IllegalArgumentException("No JSON file array found in model response")
+        val arr = org.json.JSONArray(cleaned.substring(start, end + 1))
         return buildList {
             for (i in 0 until arr.length()) {
                 val obj = arr.getJSONObject(i)
