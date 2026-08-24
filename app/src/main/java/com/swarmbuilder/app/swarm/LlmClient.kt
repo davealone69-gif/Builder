@@ -13,7 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/** Low-level LLM client designed to survive free-tier rate limits. */
+/** Low-level LLM client with retries, diagnostics, and local-provider self-healing. */
 class LlmClient(private val settings: UserSettings) {
     private val http = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -61,8 +61,9 @@ class LlmClient(private val settings: UserSettings) {
             .addHeader("Authorization", bearerToken(settings.huggingFaceToken))
             .post(body).build()
         return http.newCall(req).execute().use { resp ->
-            val raw = resp.body?.string() ?: throw RuntimeException("Empty HF response")
-            if (!resp.isSuccessful) throw RuntimeException("HF error ${resp.code}: $raw")
+            val raw = resp.body?.string()?.trim().orEmpty()
+            if (!resp.isSuccessful) throw RuntimeException("HF error ${resp.code}: ${raw.ifBlank { "empty response" }}")
+            if (raw.isBlank()) throw RuntimeException("HF returned an empty response")
             JSONArray(raw).getJSONObject(0).getString("generated_text")
         }
     }
@@ -84,11 +85,29 @@ class LlmClient(private val settings: UserSettings) {
         maxOutputTokens: Int
     ): String {
         val baseUrl = settings.localOpenAiBaseUrl.trim().trimEnd('/')
-        val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
+        val resolvedModel = resolveLocalModel(baseUrl, model)
+        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("$baseUrl/chat/completions")
             .post(body).build()
         return executeAndExtractContentWithRetry(req)
+    }
+
+    /** Discover a real local model when the saved model is blank or stale. */
+    private fun resolveLocalModel(baseUrl: String, configured: String): String {
+        if (configured.isNotBlank() && configured != "local-model") return configured
+        return try {
+            val req = Request.Builder().url("$baseUrl/models").get().build()
+            http.newCall(req).execute().use { resp ->
+                val raw = resp.body?.string()?.trim().orEmpty()
+                if (!resp.isSuccessful || raw.isBlank()) return configured.ifBlank { "local-model" }
+                val data = JSONObject(raw).optJSONArray("data") ?: return configured.ifBlank { "local-model" }
+                if (data.length() == 0) configured.ifBlank { "local-model" }
+                else data.getJSONObject(0).optString("id").ifBlank { configured.ifBlank { "local-model" } }
+            }
+        } catch (_: Exception) {
+            configured.ifBlank { "local-model" }
+        }
     }
 
     private fun chatBody(prompt: String, system: String, model: String, maxOutputTokens: Int): String =
@@ -112,9 +131,10 @@ class LlmClient(private val settings: UserSettings) {
             .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/generate")
             .post(body).build()
         return http.newCall(req).execute().use { resp ->
-            val raw = resp.body?.string() ?: throw RuntimeException("Empty Ollama response")
-            if (!resp.isSuccessful) throw RuntimeException("Ollama error ${resp.code}: $raw")
-            JSONObject(raw).getString("response")
+            val raw = resp.body?.string()?.trim().orEmpty()
+            if (!resp.isSuccessful) throw RuntimeException("Ollama error ${resp.code}: ${raw.ifBlank { "empty response" }}")
+            if (raw.isBlank()) throw RuntimeException("Ollama returned an empty response")
+            JSONObject(raw).optString("response").ifBlank { throw RuntimeException("Ollama returned no response content") }
         }
     }
 
@@ -122,19 +142,22 @@ class LlmClient(private val settings: UserSettings) {
         var lastError = "Unknown LLM error"
         repeat(8) { attempt ->
             http.newCall(req).execute().use { resp ->
-                val raw = resp.body?.string() ?: ""
+                val raw = resp.body?.string()?.trim().orEmpty()
                 if (resp.isSuccessful) {
-                    return JSONObject(raw)
-                        .getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content")
+                    if (raw.isBlank()) {
+                        lastError = "HTTP ${resp.code}: provider returned an empty response"
+                        if (attempt < 7) {
+                            delay((1500L * (attempt + 1)).coerceAtMost(8000L))
+                            return@use
+                        }
+                        throw RuntimeException(lastError)
+                    }
+                    return extractChatContent(raw)
                 }
-                lastError = "HTTP ${resp.code}: $raw"
+                lastError = "HTTP ${resp.code}: ${raw.ifBlank { "provider returned an empty response" }}"
                 if (resp.code == 429 && attempt < 7) {
                     val retryAfter = resp.header("retry-after")?.toDoubleOrNull()
-                    val waitSeconds = (retryAfter ?: 10.0 + attempt * 5.0)
-                        .coerceIn(2.0, 65.0)
+                    val waitSeconds = (retryAfter ?: 10.0 + attempt * 5.0).coerceIn(2.0, 65.0)
                     delay((waitSeconds * 1000.0).toLong())
                     return@use
                 }
@@ -142,6 +165,26 @@ class LlmClient(private val settings: UserSettings) {
             }
         }
         throw RuntimeException(lastError)
+    }
+
+    /** Accept standard OpenAI JSON and produce a useful diagnostic for malformed responses. */
+    private fun extractChatContent(raw: String): String {
+        return try {
+            val content = JSONObject(raw)
+                .optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("message")
+                ?.optString("content")
+                ?.trim()
+                .orEmpty()
+            if (content.isNotBlank()) content
+            else throw RuntimeException("Provider returned valid JSON but no choices[0].message.content")
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Exception) {
+            val preview = raw.take(500).replace("\n", " ")
+            throw RuntimeException("Provider returned non-JSON response: $preview")
+        }
     }
 
     private fun bearerToken(key: String): String = "Bearer $key"
