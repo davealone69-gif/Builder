@@ -44,7 +44,7 @@ class SwarmOrchestrator(
     ): List<SourceFile> {
         val agent = SwarmAgent(
             "repair-$attempt", "Repair", AgentRole.REVIEWER,
-            settings.preferredProvider, LlmClient.defaultModelFor(settings.preferredProvider)
+            settings.preferredProvider, LlmClient.defaultModelFor(settings.preferredProvider, settings)
         )
         agent.status = AgentStatus.RUNNING
         log(agent, "Compiler failure detected. Repair pass $attempt…")
@@ -154,11 +154,11 @@ class SwarmOrchestrator(
     private fun buildAgents(): List<SwarmAgent> {
         val primary = settings.preferredProvider
         return listOf(
-            SwarmAgent("architect", "Architect", AgentRole.ARCHITECT, primary, LlmClient.defaultModelFor(primary)),
-            SwarmAgent("coder", "Coder", AgentRole.CODER, primary, LlmClient.defaultModelFor(primary)),
-            SwarmAgent("reviewer", "Repair", AgentRole.REVIEWER, primary, LlmClient.defaultModelFor(primary)),
-            SwarmAgent("builder", "Builder", AgentRole.BUILDER, primary, LlmClient.defaultModelFor(primary)),
-            SwarmAgent("publisher", "Publisher", AgentRole.PUBLISHER, primary, LlmClient.defaultModelFor(primary))
+            SwarmAgent("architect", "Architect", AgentRole.ARCHITECT, primary, LlmClient.defaultModelFor(primary, settings)),
+            SwarmAgent("coder", "Coder", AgentRole.CODER, primary, LlmClient.defaultModelFor(primary, settings)),
+            SwarmAgent("reviewer", "Repair", AgentRole.REVIEWER, primary, LlmClient.defaultModelFor(primary, settings)),
+            SwarmAgent("builder", "Builder", AgentRole.BUILDER, primary, LlmClient.defaultModelFor(primary, settings)),
+            SwarmAgent("publisher", "Publisher", AgentRole.PUBLISHER, primary, LlmClient.defaultModelFor(primary, settings))
         )
     }
 }
