@@ -21,7 +21,6 @@ class SettingsActivity : AppCompatActivity() {
 
         val app = application as SwarmBuilderApp
         loadSettings(app.userSettings)
-
         binding.btnSave.setOnClickListener { saveSettings(app) }
     }
 
@@ -33,6 +32,8 @@ class SettingsActivity : AppCompatActivity() {
         binding.etGhUser.setText(s.githubUsername)
         binding.switchOllama.isChecked = s.useLocalOllama
         binding.etOllamaModel.setText(s.ollamaModel)
+        binding.etLocalOpenAiUrl.setText(s.localOpenAiBaseUrl)
+        binding.etLocalOpenAiModel.setText(s.localOpenAiModel)
 
         val providers = LlmProvider.values().map { it.displayName }
         val idx = LlmProvider.values().indexOfFirst { it == s.preferredProvider }
@@ -47,7 +48,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun saveSettings(app: SwarmBuilderApp) {
         val selectedIdx = binding.spinnerProvider.selectedItemPosition
         val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
-
         val settings = UserSettings(
             groqApiKey = binding.etGroqKey.text.toString().trim(),
             huggingFaceToken = binding.etHfToken.text.toString().trim(),
@@ -56,7 +56,10 @@ class SettingsActivity : AppCompatActivity() {
             githubUsername = binding.etGhUser.text.toString().trim(),
             preferredProvider = provider,
             useLocalOllama = binding.switchOllama.isChecked,
-            ollamaModel = binding.etOllamaModel.text.toString().trim().ifBlank { "llama3" }
+            ollamaModel = binding.etOllamaModel.text.toString().trim().ifBlank { "llama3" },
+            localOpenAiBaseUrl = binding.etLocalOpenAiUrl.text.toString().trim()
+                .ifBlank { "http://127.0.0.1:8081/v1" },
+            localOpenAiModel = binding.etLocalOpenAiModel.text.toString().trim()
         )
         app.saveSettings(settings)
         finish()
