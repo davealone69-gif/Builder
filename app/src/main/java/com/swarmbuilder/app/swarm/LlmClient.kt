@@ -26,7 +26,7 @@ class LlmClient(private val settings: UserSettings) {
         prompt: String,
         systemPrompt: String = "You are an expert Android developer.",
         provider: LlmProvider = settings.preferredProvider,
-        modelId: String = defaultModelFor(provider),
+        modelId: String = defaultModelFor(provider, settings),
         maxOutputTokens: Int = 2048
     ): String = withContext(Dispatchers.IO) {
         when (provider) {
@@ -34,20 +34,12 @@ class LlmClient(private val settings: UserSettings) {
             LlmProvider.HUGGINGFACE -> hfComplete(prompt, modelId, maxOutputTokens)
             LlmProvider.OPENROUTER -> openRouterComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.OLLAMA_LOCAL -> ollamaComplete(prompt, systemPrompt, modelId)
+            LlmProvider.OPENAI_COMPAT_LOCAL -> localOpenAiComplete(prompt, systemPrompt, modelId, maxOutputTokens)
         }
     }
 
     private suspend fun groqComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
-        val body = JSONObject().apply {
-            put("model", model)
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply { put("role", "system"); put("content", system) })
-                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
-            })
-            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
-            put("temperature", 0.2)
-            put("reasoning_effort", "low")
-        }.toString().toRequestBody(jsonMedia)
+        val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.groqApiKey))
@@ -76,15 +68,7 @@ class LlmClient(private val settings: UserSettings) {
     }
 
     private suspend fun openRouterComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
-        val body = JSONObject().apply {
-            put("model", model)
-            put("messages", JSONArray().apply {
-                put(JSONObject().apply { put("role", "system"); put("content", system) })
-                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
-            })
-            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
-            put("temperature", 0.2)
-        }.toString().toRequestBody(jsonMedia)
+        val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("${LlmProvider.OPENROUTER.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.openRouterApiKey))
@@ -92,6 +76,34 @@ class LlmClient(private val settings: UserSettings) {
             .post(body).build()
         return executeAndExtractContentWithRetry(req)
     }
+
+    private suspend fun localOpenAiComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
+        val baseUrl = settings.localOpenAiBaseUrl.trim().trimEnd('/')
+        val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
+        val builder = Request.Builder()
+            .url("$baseUrl/chat/completions")
+            .post(body)
+        if (settings.localOpenAiApiKey.isNotBlank()) {
+            builder.addHeader("Authorization", bearerToken(settings.localOpenAiApiKey))
+        }
+        return executeAndExtractContentWithRetry(builder.build())
+    }
+
+    private fun chatBody(prompt: String, system: String, model: String, maxOutputTokens: Int): String =
+        JSONObject().apply {
+            put("model", model)
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply { put("role", "system"); put("content", system) })
+                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
+            })
+            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
+            put("temperature", 0.2)
+        }.toString()
 
     private fun ollamaComplete(prompt: String, system: String, model: String): String {
         val body = JSONObject().apply {
@@ -109,10 +121,6 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    /**
-     * Free-tier friendly retry: a 429 is a temporary scheduling condition,
-     * not a pipeline failure. Wait for the provider's advertised reset time.
-     */
     private suspend fun executeAndExtractContentWithRetry(req: Request): String {
         var lastError = "Unknown LLM error"
         repeat(8) { attempt ->
@@ -142,11 +150,12 @@ class LlmClient(private val settings: UserSettings) {
     private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
-        fun defaultModelFor(provider: LlmProvider): String = when (provider) {
+        fun defaultModelFor(provider: LlmProvider, settings: UserSettings): String = when (provider) {
             LlmProvider.GROQ -> "openai/gpt-oss-20b"
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
-            LlmProvider.OLLAMA_LOCAL -> "llama3"
+            LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }
+            LlmProvider.OPENAI_COMPAT_LOCAL -> settings.localOpenAiModel.ifBlank { "local-model" }
         }
     }
 }
