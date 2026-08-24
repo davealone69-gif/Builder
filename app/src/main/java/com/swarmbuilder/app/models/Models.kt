@@ -28,12 +28,10 @@ enum class LlmProvider(val displayName: String, val baseUrl: String) {
     GROQ("Groq (Llama3)", "https://api.groq.com/openai/v1"),
     HUGGINGFACE("Hugging Face", "https://api-inference.huggingface.co/models"),
     OPENROUTER("OpenRouter (free tier)", "https://openrouter.ai/api/v1"),
-    OLLAMA_LOCAL("Ollama (local)", "http://localhost:11434/api")
+    OLLAMA_LOCAL("Ollama (local)", "http://localhost:11434/api"),
+    OPENAI_COMPAT_LOCAL("Local OpenAI-Compatible", "http://127.0.0.1:8081/v1")
 }
 
-/**
- * Describes the Android app to be built.
- */
 data class AppSpec(
     val prompt: String,
     val appName: String = "",
@@ -42,17 +40,11 @@ data class AppSpec(
     val features: List<String> = emptyList()
 )
 
-/**
- * Holds a generated source file.
- */
 data class SourceFile(
-    val relativePath: String,  // e.g. "app/src/main/java/com/example/MainActivity.kt"
+    val relativePath: String,
     val content: String
 )
 
-/**
- * Overall build result produced by the swarm.
- */
 data class BuildResult(
     val success: Boolean,
     val appName: String,
@@ -62,9 +54,6 @@ data class BuildResult(
     val logs: List<String> = emptyList()
 )
 
-/**
- * A single log entry emitted during swarm execution.
- */
 data class SwarmLog(
     val agentName: String,
     val message: String,
@@ -74,9 +63,6 @@ data class SwarmLog(
 
 enum class LogLevel { INFO, SUCCESS, WARNING, ERROR }
 
-/**
- * Settings stored by the user for API keys and GitHub credentials.
- */
 data class UserSettings(
     val groqApiKey: String = "",
     val huggingFaceToken: String = "",
@@ -85,5 +71,7 @@ data class UserSettings(
     val githubUsername: String = "",
     val preferredProvider: LlmProvider = LlmProvider.GROQ,
     val useLocalOllama: Boolean = false,
-    val ollamaModel: String = "llama3"
+    val ollamaModel: String = "llama3",
+    val localOpenAiBaseUrl: String = "http://127.0.0.1:8081/v1",
+    val localOpenAiModel: String = ""
 )
