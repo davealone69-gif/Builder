@@ -30,7 +30,10 @@ class SwarmBuilderApp : Application() {
             githubUsername = prefs.getString(PREF_GH_USER, "") ?: "",
             preferredProvider = provider,
             useLocalOllama = prefs.getBoolean(PREF_OLLAMA, false),
-            ollamaModel = prefs.getString(PREF_OLLAMA_MODEL, "llama3") ?: "llama3"
+            ollamaModel = prefs.getString(PREF_OLLAMA_MODEL, "llama3") ?: "llama3",
+            localOpenAiBaseUrl = prefs.getString(PREF_LOCAL_OPENAI_URL, "http://127.0.0.1:8081/v1")
+                ?: "http://127.0.0.1:8081/v1",
+            localOpenAiModel = prefs.getString(PREF_LOCAL_OPENAI_MODEL, "") ?: ""
         ).also { userSettings = it }
     }
 
@@ -44,6 +47,8 @@ class SwarmBuilderApp : Application() {
             .putString(PREF_PROVIDER, s.preferredProvider.name)
             .putBoolean(PREF_OLLAMA, s.useLocalOllama)
             .putString(PREF_OLLAMA_MODEL, s.ollamaModel)
+            .putString(PREF_LOCAL_OPENAI_URL, s.localOpenAiBaseUrl)
+            .putString(PREF_LOCAL_OPENAI_MODEL, s.localOpenAiModel)
             .apply()
         userSettings = s
     }
@@ -57,5 +62,7 @@ class SwarmBuilderApp : Application() {
         const val PREF_PROVIDER = "preferred_provider"
         const val PREF_OLLAMA = "use_ollama"
         const val PREF_OLLAMA_MODEL = "ollama_model"
+        const val PREF_LOCAL_OPENAI_URL = "local_openai_base_url"
+        const val PREF_LOCAL_OPENAI_MODEL = "local_openai_model"
     }
 }
