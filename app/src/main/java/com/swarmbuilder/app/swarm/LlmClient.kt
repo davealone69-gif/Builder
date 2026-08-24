@@ -85,13 +85,10 @@ class LlmClient(private val settings: UserSettings) {
     ): String {
         val baseUrl = settings.localOpenAiBaseUrl.trim().trimEnd('/')
         val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
-        val builder = Request.Builder()
+        val req = Request.Builder()
             .url("$baseUrl/chat/completions")
-            .post(body)
-        if (settings.localOpenAiApiKey.isNotBlank()) {
-            builder.addHeader("Authorization", bearerToken(settings.localOpenAiApiKey))
-        }
-        return executeAndExtractContentWithRetry(builder.build())
+            .post(body).build()
+        return executeAndExtractContentWithRetry(req)
     }
 
     private fun chatBody(prompt: String, system: String, model: String, maxOutputTokens: Int): String =
