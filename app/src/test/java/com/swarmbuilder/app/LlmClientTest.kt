@@ -13,21 +13,36 @@ class LlmClientTest {
 
     @Test
     fun `defaultModelFor returns non-blank strings for all providers`() {
+        val settings = UserSettings()
         LlmProvider.values().forEach { provider ->
-            val model = LlmClient.defaultModelFor(provider)
+            val model = LlmClient.defaultModelFor(provider, settings)
             assertNotNull(model)
             assert(model.isNotBlank()) { "Model for $provider should not be blank" }
         }
     }
 
     @Test
-    fun `defaultModelFor GROQ returns llama3 model`() {
-        assertEquals("llama3-70b-8192", LlmClient.defaultModelFor(LlmProvider.GROQ))
+    fun `defaultModelFor GROQ returns gpt oss model`() {
+        assertEquals("openai/gpt-oss-20b", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
     }
 
     @Test
-    fun `defaultModelFor OLLAMA_LOCAL returns llama3`() {
-        assertEquals("llama3", LlmClient.defaultModelFor(LlmProvider.OLLAMA_LOCAL))
+    fun `defaultModelFor OLLAMA_LOCAL returns configured model`() {
+        assertEquals(
+            "llama3",
+            LlmClient.defaultModelFor(
+                LlmProvider.OLLAMA_LOCAL,
+                UserSettings(ollamaModel = "llama3")
+            )
+        )
+    }
+
+    @Test
+    fun `defaultModelFor local OpenAI compatible returns configured model`() {
+        assertEquals(
+            "local-model",
+            LlmClient.defaultModelFor(LlmProvider.OPENAI_COMPAT_LOCAL, UserSettings())
+        )
     }
 
     @Test
@@ -59,7 +74,6 @@ class LlmClientTest {
             githubToken = "",
             githubUsername = ""
         )
-        // LlmClient can be constructed even with empty keys (API calls would fail at runtime)
         val client = LlmClient(settings)
         assertNotNull(client)
     }
