@@ -58,6 +58,7 @@ class SwarmBuilderApp : Application() {
                     when (value) {
                         is String -> secureEdit.putString(key, value)
                         is Boolean -> secureEdit.putBoolean(key, value)
+                        else -> Unit
                     }
                 }
                 legacyEdit.remove(key)
