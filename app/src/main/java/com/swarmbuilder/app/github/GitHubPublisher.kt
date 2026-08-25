@@ -112,9 +112,26 @@ class GitHubPublisher(private val settings: UserSettings) {
                 uploadDirectory(root, file, repoName)
             } else {
                 val relativePath = file.relativeTo(root).path.replace(File.separatorChar, '/')
-                uploadFile(repoName, relativePath, file)
+                when {
+                    !isPublishable(relativePath) -> Unit // build outputs & local secrets stay on-device
+                    file.length() > MAX_CONTENTS_API_BYTES ->
+                        logs.tryEmit(SwarmLog("Publisher", "Skipping $relativePath (>1 MB Contents API limit)", LogLevel.WARNING))
+                    else -> uploadFile(repoName, relativePath, file)
+                }
             }
         }
+    }
+
+    /**
+     * Never publish machine-local or bulky artifacts: local.properties (SDK paths),
+     * Gradle caches, build outputs, IDE files and binaries. Only the source tree,
+     * Gradle build scripts and the wrapper belong in the repo.
+     */
+    private fun isPublishable(relativePath: String): Boolean {
+        val segments = relativePath.split('/')
+        if (segments.any { it in EXCLUDED_SEGMENTS }) return false
+        if (segments.last() in EXCLUDED_FILES) return false
+        return true
     }
 
     private fun uploadFile(repoName: String, path: String, file: File) {
@@ -175,5 +192,12 @@ class GitHubPublisher(private val settings: UserSettings) {
                 throw RuntimeException("APK upload failed ${resp.code}: $raw")
             }
         }
+    }
+
+    private companion object {
+        // GitHub Contents API rejects files larger than 1 MB.
+        const val MAX_CONTENTS_API_BYTES = 950L * 1024L
+        val EXCLUDED_SEGMENTS = setOf("build", ".gradle", ".idea", ".kotlin", "captures", ".cxx", ".externalNativeBuild")
+        val EXCLUDED_FILES = setOf("local.properties", "debug.keystore", "release.keystore")
     }
 }

@@ -9,3 +9,10 @@ captures/
 .cxx/
 *.apk
 *.aab
+
+# Python (todo-api)
+.env
+*.env
+!.env.example
+__pycache__/
+*.pyc

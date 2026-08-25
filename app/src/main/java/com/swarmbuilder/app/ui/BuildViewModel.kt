@@ -67,11 +67,18 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Compiler-first loop. AI is called again only after real Gradle failure.
                 val maxRepairPasses = 8
+                val pipelineStartMs = System.currentTimeMillis()
                 var repairPass = 0
                 var projectDir: File? = null
                 var buildResult: BuildResult
 
                 while (true) {
+                    if (System.currentTimeMillis() - pipelineStartMs > PIPELINE_MAX_MS) {
+                        throw IllegalStateException(
+                            "Pipeline exceeded the ${PIPELINE_MAX_MS / 60_000} minute overall limit. " +
+                                "Stopping to protect battery and data."
+                        )
+                    }
                     _phase.postValue(
                         if (repairPass == 0) "🔨 Building APK…"
                         else "🔧 Compiler repair $repairPass/$maxRepairPasses…"
@@ -126,6 +133,10 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun emit(msg: String, level: LogLevel = LogLevel.INFO) {
         _logs.emit(SwarmLog("System", msg, level))
+    }
+
+    private companion object {
+        const val PIPELINE_MAX_MS = 90L * 60L * 1000L // 90 minutes end-to-end
     }
 }
 

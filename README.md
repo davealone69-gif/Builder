@@ -105,6 +105,26 @@ app/src/main/java/com/swarmbuilder/app/
 
 ---
 
+## Security notes
+
+- **API keys** are stored in Android Keystore-backed encrypted preferences and
+  device backups are disabled (`allowBackup=false`).
+- **Cleartext HTTP is allowed only to loopback** (`localhost`, `127.0.0.1`,
+  `10.0.2.2`) for local LLM servers; all cloud traffic is HTTPS. A LAN HTTP
+  endpoint requires an HTTPS proxy.
+- **Generated projects are code**: the app writes LLM-produced sources to disk
+  (traversal-guarded so files can't escape the project dir) and runs
+  `./gradlew assembleDebug` on them — build scripts execute with the app's
+  privileges by design. Builds are debug-only, time-boxed (30 min per build,
+  90 min end-to-end), and the generated APK is signed with the debug key.
+  Only run prompts you're comfortable having executed, and review unfamiliar
+  `build.gradle` output before re-running.
+- **GitHub publishing** uploads only the source tree — never `local.properties`,
+  `build/` outputs, `.gradle/` caches or license/SDK paths — and skips files
+  above the GitHub Contents API size limit.
+
+---
+
 ## License
 
 MIT

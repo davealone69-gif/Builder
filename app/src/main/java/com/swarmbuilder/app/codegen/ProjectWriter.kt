@@ -15,9 +15,15 @@ class ProjectWriter(private val context: Context) {
     fun write(spec: AppSpec, files: List<SourceFile>): File {
         val safeAppName = spec.appName.replace(Regex("[^A-Za-z0-9_]"), "_")
         val projectDir = File(context.cacheDir, "projects/$safeAppName").also { it.mkdirs() }
+        val projectRoot = projectDir.canonicalPath + File.separator
 
         files.forEach { sf ->
-            val target = File(projectDir, sf.relativePath)
+            // Guard against path traversal in LLM-generated file names —
+            // every target must stay inside the project directory.
+            val target = File(projectDir, sf.relativePath).canonicalFile
+            require(target.path.startsWith(projectRoot)) {
+                "Refusing to write outside project dir: ${sf.relativePath}"
+            }
             target.parentFile?.mkdirs()
             target.writeText(sf.content)
         }

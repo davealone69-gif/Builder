@@ -1,16 +1,16 @@
 name: Build & Release APK
 
-# Single workflow that replaces the old "Build APK" + "Build and Release APK"
-# + "CI Status" trio:
-#   * every push/PR to main  -> build debug APK, upload as artifact
-#   * push of tag v*         -> build debug + release APKs, attach to a GitHub Release
+# Single workflow (replaces the old "Build APK" + "Build and Release APK"
+# + "CI Status" trio):
+#   * every push/PR to main  -> unit tests, build, artifact upload (read-only token)
+#   * push of tag v*         -> same, plus a release job (write-scoped token)
 #   * manual dispatch        -> same as a tag push (tag is named automatically)
 #
-# Key hardening vs the old version:
-#   * Gradle exit code is NEVER masked (no `| tee` without checking PIPESTATUS)
-#   * the job FAILS LOUDLY if no APK is produced  ->  no more green-but-empty releases
+# Hardening:
+#   * Gradle exit code is NEVER masked; the job fails loudly if no APK is produced
 #   * release step has fail_on_unmatched_files: true
 #   * concurrency cancels stale runs when pushing rapidly
+#   * least privilege: `contents: write` exists only on the release job
 
 on:
   push:
@@ -20,9 +20,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -31,6 +28,8 @@ jobs:
   build:
     name: Build APKs
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -96,8 +95,24 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  release:
+    name: Publish Release
+    # Only tags and manual runs reach this job, and it is the ONLY job with
+    # write permissions on the repo.
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: swarmbuilder-apks
+          path: release-apks
+
       - name: Create GitHub Release with APKs
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
