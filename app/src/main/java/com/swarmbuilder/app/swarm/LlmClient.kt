@@ -279,7 +279,9 @@ class LlmClient(private val settings: UserSettings) {
                 throw RuntimeException(lastError)
             }
         }
-
+        // All paths inside repeat() either return or throw, but keep this
+        // as a safety net in case of unexpected flow changes.
+        @Suppress("UNREACHABLE_CODE")
         throw RuntimeException(lastError)
     }
 
