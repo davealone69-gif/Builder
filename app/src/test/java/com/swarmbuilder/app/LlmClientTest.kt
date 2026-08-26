@@ -22,8 +22,8 @@ class LlmClientTest {
     }
 
     @Test
-    fun `defaultModelFor GROQ returns gpt oss model`() {
-        assertEquals("openai/gpt-oss-20b", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
+    fun `defaultModelFor GROQ returns llama model`() {
+        assertEquals("llama-3.3-70b-versatile", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
     }
 
     @Test
@@ -67,13 +67,7 @@ class LlmClientTest {
 
     @Test
     fun `UserSettings with blank keys still constructs`() {
-        val settings = UserSettings(
-            groqApiKey = "",
-            huggingFaceToken = "",
-            openRouterApiKey = "",
-            githubToken = "",
-            githubUsername = ""
-        )
+        val settings = UserSettings()
         val client = LlmClient(settings)
         assertNotNull(client)
     }
