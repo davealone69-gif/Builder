@@ -69,7 +69,7 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
                 val maxRepairPasses = 8
                 val pipelineStartMs = System.currentTimeMillis()
                 var repairPass = 0
-                var projectDir: File? = null
+                var projectDir: File?
                 var buildResult: BuildResult
 
                 while (true) {
