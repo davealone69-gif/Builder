@@ -1,112 +1,303 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:padding="16dp">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="@drawable/ic_back"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-    </com.google.android.material.appbar.AppBarLayout>
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gap="16dp">
 
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-        <LinearLayout
+        <!-- ══════ HEADER ═══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚙️ SwarmBuilder Settings"
+            android:textColor="#ffffff"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- ═══════ GLOBAL API KEYS ═══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔑 Global API Keys (free to get)"
+            android:textColor="#6c5ce7"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <EditText android:id="@+id/input_groq_key"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:hint="Groq API Key (free at console.groq.com)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_groq_key" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_groq_key"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <EditText android:id="@+id/input_hf_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Hugging Face Token (free at huggingface.co)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_hf_token" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_hf_token"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <EditText android:id="@+id/input_openrouter_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="OpenRouter API Key (free at openrouter.ai)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_or_key" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_or_key"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <!-- ══════ DEFAULT PROVIDER ═══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔄 Default LLM Provider (fallback)"
+            android:textColor="#6c5ce7"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_gh_token" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_gh_token"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <Spinner android:id="@+id/spinner_provider"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/input_bg"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_gh_user" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_gh_user"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <!-- ═══════ GITHUB ══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" GitHub Settings"
+            android:textColor="#6c5ce7"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_provider" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
-            <Spinner android:id="@+id/spinner_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/input_github_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="GitHub Personal Access Token (repo scope)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_local_openai_url" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_url"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:inputType="textUri" android:text="http://127.0.0.1:8081/v1" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <EditText android:id="@+id/input_github_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="GitHub Username"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp"/>
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="@string/hint_local_openai_model">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_model"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <EditText android:id="@+id/input_github_repo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Repo name (e.g. my-app)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
 
-            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_ollama"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_use_ollama" android:layout_marginTop="12dp" />
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="@string/hint_ollama_model">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_ollama_model"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <!-- ═══════ PER-AGENT CONFIG ═══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🤖 Per-Agent AI Config"
+            android:textColor="#6c5ce7"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
 
-            <com.google.android.material.button.MaterialButton android:id="@+id/btn_save"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/btn_save" android:textAllCaps="false" android:layout_marginTop="16dp" />
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Each agent can use a different AI. Leave fields blank to use defaults."
+            android:textColor="#888888"
+            android:textSize="13sp"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- ─── Architect ─── -->
+        <include layout="@layout/agent_config_section"
+            android:id="@+id/section_architect"/>
+
+        <!-- (In real app, duplicate the agent_config_section 3 times with different IDs.
+             For brevity, here's the inline version:) -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📐 Architect"
+            android:textColor="#00cec9"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+
+        <Spinner android:id="@+id/spinner_arch_provider"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/input_bg"
+            android:padding="8dp"/>
+
+        <EditText android:id="@+id/input_arch_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Model (blank = default for provider)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_arch_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Custom URL (blank = provider default). e.g. http://192.168.1.10:11434"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_arch_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="API Key override (blank = use global key)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- ─── Coder ─── -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💻 Coder"
+            android:textColor="#fd79a8"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+
+        <Spinner android:id="@+id/spinner_coder_provider"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/input_bg"
+            android:padding="8dp"/>
+
+        <EditText android:id="@+id/input_coder_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Model (blank = default)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_coder_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Custom URL (blank = provider default)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_coder_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="API Key override (blank = use global key)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- ─── Reviewer ─── -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔧 Reviewer / Fixer"
+            android:textColor="#fdcb6e"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+
+        <Spinner android:id="@+id/spinner_reviewer_provider"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/input_bg"
+            android:padding="8dp"/>
+
+        <EditText android:id="@+id/input_reviewer_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Model (blank = default)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_reviewer_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Custom URL (blank = provider default)"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"/>
+
+        <EditText android:id="@+id/input_reviewer_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="API Key override (blank = use global key)"
+            android:inputType="textPassword"
+            android:textColor="#ffffff"
+            android:textColorHint="#666666"
+            android:background="@drawable/input_bg"
+            android:padding="10dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- ═══════ HELP TEXT ═══════ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💡 Tip: Use a custom URL to point at a web chatbot proxy (like LiteLLM or a FreeGPT server). This lets you use ChatGPT/Gemini/Claude web interfaces as your AI backend."
+            android:textColor="#aaaaaa"
+            android:textSize="12sp"
+            android:background="#2a2a3e"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- ═══════ SAVE BUTTON ═══════ -->
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="💾 Save Settings"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:backgroundTint="#6c5ce7"
+            android:onClick="onSaveClicked"/>
+
+    </LinearLayout>
+</ScrollView>

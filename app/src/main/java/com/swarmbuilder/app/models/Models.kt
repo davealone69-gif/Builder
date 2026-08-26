@@ -34,3 +34,155 @@ enum class AgentStatus {
  * - Provider (Groq, Ollama, etc.)
  * - Model name (blank = use provider default)
  * - Base URL (blank = use provider default; e.g. http://192.168.1.5:11434)
+ * - API key (blank = use global key from UserSettings)
+ *
+ * This lets you point different agents at different AIs — e.g. Architect
+ * on Groq (fast JSON), Coder on Ollama (free/unlimited), Reviewer on OpenRouter.
+ */
+data class AgentConfig(
+    val provider: LlmProvider = LlmProvider.GROQ,
+    val modelId: String = "",
+    val baseUrl: String = "",       // empty = use provider's default baseUrl
+    val apiKey: String = ""         // empty = use global key from UserSettings
+)
+
+enum class LlmProvider(val displayName: String, val baseUrl: String) {
+    GROQ("Groq (Llama3)", "https://api.groq.com/openai/v1"),
+    HUGGINGFACE("Hugging Face", "https://api-inference.huggingface.co/models"),
+    OPENROUTER("OpenRouter (free tier)", "https://openrouter.ai/api/v1"),
+    OLLAMA_LOCAL("Ollama (local)", "http://localhost:11434/api"),
+    OPENAI_COMPAT_LOCAL("Local OpenAI-Compatible", "http://127.0.0.1:8081/v1");
+
+    /** v3: Does this provider accept a system prompt in chat completions? */
+    val supportsSystemPrompt: Boolean
+        get() = this != HUGGINGFACE
+
+    /** v3: Does this provider need an API key to work? */
+    val requiresApiKey: Boolean
+        get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER
+}
+
+data class AppSpec(
+    val prompt: String,
+    val appName: String = "",
+    val packageName: String = "",
+    val description: String = "",
+    val features: List<String> = emptyList()
+)
+
+data class SourceFile(
+    val relativePath: String,
+    val content: String
+)
+
+data class BuildResult(
+    val success: Boolean,
+    val appName: String,
+    val apkPath: String? = null,
+    val githubUrl: String? = null,
+    val errorMessage: String? = null,
+    val logs: List<String> = emptyList()
+)
+
+data class SwarmLog(
+    val agentName: String,
+    val message: String,
+    val level: LogLevel = LogLevel.INFO,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+enum class LogLevel { INFO, SUCCESS, WARNING, ERROR }
+
+/**
+ * v3: UserSettings now supports per-agent AI config.
+ * All original fields kept exactly as they were — old code keeps working.
+ * New fields added at the end with safe defaults.
+ */
+data class UserSettings(
+    // ── Original fields (unchanged) ─────────────────
+    val groqApiKey: String = "",
+    val huggingFaceToken: String = "",
+    val openRouterApiKey: String = "",
+    val githubToken: String = "",
+    val githubUsername: String = "",
+    val preferredProvider: LlmProvider = LlmProvider.GROQ,
+    val useLocalOllama: Boolean = false,
+    val ollamaModel: String = "llama3",
+    val localOpenAiBaseUrl: String = "http://127.0.0.1:8081/v1",
+    val localOpenAiModel: String = "",
+
+    // ── NEW v3: GitHub repo name (for push button) ──
+    val githubRepoName: String = "",
+
+    // ── NEW v3: Per-agent AI overrides ──────────────
+    val architectConfig: AgentConfig = AgentConfig(),
+    val coderConfig: AgentConfig = AgentConfig(),
+    val reviewerConfig: AgentConfig = AgentConfig()
+) {
+
+    // ── NEW v3: Helper methods ──────────────────────
+
+    /**
+     * Resolve the API key to use for a provider.
+     * Priority: agent override > global key.
+     */
+    fun resolveApiKey(provider: LlmProvider, agentOverride: String = ""): String {
+        if (agentOverride.isNotBlank()) return agentOverride
+        return when (provider) {
+            LlmProvider.GROQ -> groqApiKey
+            LlmProvider.HUGGINGFACE -> huggingFaceToken
+            LlmProvider.OPENROUTER -> openRouterApiKey
+            LlmProvider.OLLAMA_LOCAL,
+            LlmProvider.OPENAI_COMPAT_LOCAL -> ""  // local = no key needed
+        }
+    }
+
+    /**
+     * Resolve the base URL to use for a provider.
+     * Priority: agent override > provider default.
+     * Special case: Ollama on Android needs user's PC LAN IP, not localhost.
+     */
+    fun resolveBaseUrl(provider: LlmProvider, agentOverride: String = ""): String {
+        if (agentOverride.isNotBlank()) return agentOverride.trimEnd('/')
+        // If Ollama and user configured a non-localhost URL, use that
+        if (provider == LlmProvider.OLLAMA_LOCAL &&
+            localOpenAiBaseUrl.isNotBlank() &&
+            !localOpenAiBaseUrl.contains("127.0.0.1") &&
+            !localOpenAiBaseUrl.contains("localhost")) {
+            return localOpenAiBaseUrl.removeSuffix("/v1").removeSuffix("/api").trimEnd('/')
+        }
+        return provider.baseUrl.trimEnd('/')
+    }
+
+    /**
+     * Check if a provider is actually usable with current settings.
+     * Cloud providers need a key; local providers always work.
+     */
+    fun isProviderAvailable(provider: LlmProvider): Boolean {
+        if (!provider.requiresApiKey) return true
+        return resolveApiKey(provider).isNotBlank()
+    }
+
+    /**
+     * Get the list of providers that are currently usable.
+     * Used to build fallback chains in LlmClient.
+     */
+    fun availableProviders(): List<LlmProvider> =
+        LlmProvider.values().filter { isProviderAvailable(it) }
+
+    /**
+     * Pick the best fallback provider when the preferred one fails.
+     * Prefers: another cloud provider with a key > local providers.
+     */
+    fun pickFallbackProvider(exclude: LlmProvider): LlmProvider? {
+        val candidates = availableProviders().filter { it != exclude }
+        // Prefer fast cloud providers first
+        candidates.firstOrNull { it == LlmProvider.GROQ }?.let { return it }
+        candidates.firstOrNull { it == LlmProvider.OPENROUTER }?.let { return it }
+        candidates.firstOrNull { it == LlmProvider.HUGGINGFACE }?.let { return it }
+        // Then local providers (unlimited but slower)
+        candidates.firstOrNull { it == LlmProvider.OLLAMA_LOCAL }?.let { return it }
+        candidates.firstOrNull { it == LlmProvider.OPENAI_COMPAT_LOCAL }?.let { return it }
+        return null
+    }
+}

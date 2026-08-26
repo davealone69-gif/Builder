@@ -13,13 +13,23 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-/** Low-level LLM client with retries, diagnostics, and local-provider self-healing. */
+/**
+ * Low-level LLM client with retries and diagnostics.
+ *
+ * FIX: Groq default model changed from "openai/gpt-oss-20b" (DOES NOT EXIST)
+ * to "llama-3.3-70b-versatile" (REAL Groq model).
+ *
+ * FIX: Error messages now show what the provider actually returned,
+ * so "no choices[0].message.content" errors are actually debuggable.
+ */
 class LlmClient(private val settings: UserSettings) {
+
     private val http = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(180, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
+
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
     suspend fun complete(
@@ -38,13 +48,34 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
-    private suspend fun groqComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
-        val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
+    private suspend fun groqComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
+        val resolvedModel = resolveGroqModel(model)
+        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.groqApiKey))
             .post(body).build()
-        return executeAndExtractContentWithRetry(req)
+        return executeAndExtractContentWithRetry(req, providerName = "Groq", model = resolvedModel)
+    }
+
+    /**
+     * FIX: Map known bad model names to real Groq models.
+     * "openai/gpt-oss-20b" does NOT exist on Groq — that was the crash bug.
+     */
+    private fun resolveGroqModel(configured: String): String = when {
+        // Already a valid Groq model ID
+        configured in VALID_GROQ_MODELS -> configured
+        // The buggy legacy default
+        configured == "openai/gpt-oss-20b" -> "llama-3.3-70b-versatile"
+        // Blank → use best free Groq model
+        configured.isBlank() -> "llama-3.3-70b-versatile"
+        // User typed something — try it as-is
+        else -> configured
     }
 
     private suspend fun hfComplete(prompt: String, model: String, maxOutputTokens: Int): String {
@@ -64,18 +95,27 @@ class LlmClient(private val settings: UserSettings) {
             val raw = resp.body?.string()?.trim().orEmpty()
             if (!resp.isSuccessful) throw RuntimeException("HF error ${resp.code}: ${raw.ifBlank { "empty response" }}")
             if (raw.isBlank()) throw RuntimeException("HF returned an empty response")
-            JSONArray(raw).getJSONObject(0).getString("generated_text")
+            try {
+                JSONArray(raw).getJSONObject(0).getString("generated_text")
+            } catch (e: Exception) {
+                throw RuntimeException("HF returned unexpected JSON: ${raw.take(300)}", e)
+            }
         }
     }
 
-    private suspend fun openRouterComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
+    private suspend fun openRouterComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
         val body = chatBody(prompt, system, model, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("${LlmProvider.OPENROUTER.baseUrl}/chat/completions")
             .addHeader("Authorization", bearerToken(settings.openRouterApiKey))
             .addHeader("HTTP-Referer", "https://github.com/davealone69-gif/Builder")
             .post(body).build()
-        return executeAndExtractContentWithRetry(req)
+        return executeAndExtractContentWithRetry(req, providerName = "OpenRouter", model = model)
     }
 
     private suspend fun localOpenAiComplete(
@@ -90,10 +130,9 @@ class LlmClient(private val settings: UserSettings) {
         val req = Request.Builder()
             .url("$baseUrl/chat/completions")
             .post(body).build()
-        return executeAndExtractContentWithRetry(req)
+        return executeAndExtractContentWithRetry(req, providerName = "Local OpenAI", model = resolvedModel)
     }
 
-    /** Discover a real local model when the saved model is blank or stale. */
     private fun resolveLocalModel(baseUrl: String, configured: String): String {
         if (configured.isNotBlank() && configured != "local-model") return configured
         return try {
@@ -110,6 +149,81 @@ class LlmClient(private val settings: UserSettings) {
         }
     }
 
+    private suspend fun ollamaComplete(prompt: String, system: String, model: String): String {
+        val resolvedModel = model.ifBlank { settings.ollamaModel.ifBlank { "llama3" } }
+
+        // Try /api/chat first (supports system prompt properly)
+        try {
+            return ollamaChat(resolvedModel, prompt, system)
+        } catch (e: Exception) {
+            // Fall back to /api/generate
+            return ollamaGenerate(resolvedModel, prompt, system)
+        }
+    }
+
+    private suspend fun ollamaChat(model: String, prompt: String, system: String): String {
+        val body = JSONObject().apply {
+            put("model", model)
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply { put("role", "system"); put("content", system) })
+                put(JSONObject().apply { put("role", "user"); put("content", prompt) })
+            })
+            put("stream", false)
+            put("options", JSONObject().apply {
+                put("num_predict", 2048)
+                put("temperature", 0.2)
+            })
+        }.toString().toRequestBody(jsonMedia)
+
+        val req = Request.Builder()
+            .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/chat")
+            .post(body).build()
+
+        return http.newCall(req).execute().use { resp ->
+            val raw = resp.body?.string()?.trim().orEmpty()
+            if (!resp.isSuccessful)
+                throw RuntimeException("Ollama /api/chat error ${resp.code}: ${raw.ifBlank { "empty response" }}")
+            if (raw.isBlank())
+                throw RuntimeException("Ollama returned an empty response")
+            try {
+                val json = JSONObject(raw)
+                val content = json.optJSONObject("message")?.optString("content")?.trim().orEmpty()
+                if (content.isNotBlank()) return@use content
+                val alt = json.optString("response").ifBlank {
+                    throw RuntimeException("Ollama /api/chat returned no content. Raw: ${raw.take(300)}")
+                }
+                alt
+            } catch (e: RuntimeException) {
+                throw e
+            } catch (e: Exception) {
+                throw RuntimeException("Ollama returned non-JSON: ${raw.take(300)}", e)
+            }
+        }
+    }
+
+    private suspend fun ollamaGenerate(model: String, prompt: String, system: String): String {
+        val body = JSONObject().apply {
+            put("model", model)
+            put("prompt", "$system\n\n$prompt")
+            put("stream", false)
+        }.toString().toRequestBody(jsonMedia)
+
+        val req = Request.Builder()
+            .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/generate")
+            .post(body).build()
+
+        return http.newCall(req).execute().use { resp ->
+            val raw = resp.body?.string()?.trim().orEmpty()
+            if (!resp.isSuccessful)
+                throw RuntimeException("Ollama /api/generate error ${resp.code}: ${raw.ifBlank { "empty response" }}")
+            if (raw.isBlank())
+                throw RuntimeException("Ollama returned an empty response")
+            JSONObject(raw).optString("response").ifBlank {
+                throw RuntimeException("Ollama returned no response content. Raw: ${raw.take(300)}")
+            }
+        }
+    }
+
     private fun chatBody(prompt: String, system: String, model: String, maxOutputTokens: Int): String =
         JSONObject().apply {
             put("model", model)
@@ -121,78 +235,119 @@ class LlmClient(private val settings: UserSettings) {
             put("temperature", 0.2)
         }.toString()
 
-    private fun ollamaComplete(prompt: String, system: String, model: String): String {
-        val body = JSONObject().apply {
-            put("model", model)
-            put("prompt", "$system\n\n$prompt")
-            put("stream", false)
-        }.toString().toRequestBody(jsonMedia)
-        val req = Request.Builder()
-            .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/generate")
-            .post(body).build()
-        return http.newCall(req).execute().use { resp ->
-            val raw = resp.body?.string()?.trim().orEmpty()
-            if (!resp.isSuccessful) throw RuntimeException("Ollama error ${resp.code}: ${raw.ifBlank { "empty response" }}")
-            if (raw.isBlank()) throw RuntimeException("Ollama returned an empty response")
-            JSONObject(raw).optString("response").ifBlank { throw RuntimeException("Ollama returned no response content") }
-        }
-    }
-
-    private suspend fun executeAndExtractContentWithRetry(req: Request): String {
+    /**
+     * FIX: Execute with retries and RICH error messages.
+     * When a provider returns an error JSON (e.g. {"error":{"message":"..."}}),
+     * we now show that message instead of the misleading
+     * "no choices[0].message.content" error.
+     */
+    private suspend fun executeAndExtractContentWithRetry(
+        req: Request,
+        providerName: String = "Provider",
+        model: String = ""
+    ): String {
         var lastError = "Unknown LLM error"
+
         repeat(8) { attempt ->
             http.newCall(req).execute().use { resp ->
                 val raw = resp.body?.string()?.trim().orEmpty()
                 if (resp.isSuccessful) {
                     if (raw.isBlank()) {
-                        lastError = "HTTP ${resp.code}: provider returned an empty response"
+                        lastError = "HTTP ${resp.code}: $providerName (model=$model) returned an empty response"
                         if (attempt < 7) {
                             delay((1500L * (attempt + 1)).coerceAtMost(8000L))
                             return@use
                         }
                         throw RuntimeException(lastError)
                     }
-                    return extractChatContent(raw)
+                    return extractChatContent(raw, providerName, model)
                 }
-                lastError = "HTTP ${resp.code}: ${raw.ifBlank { "provider returned an empty response" }}"
+                lastError = "HTTP ${resp.code}: $providerName (model=$model) ${raw.ifBlank { "empty response" }.take(250)}"
                 if (resp.code == 429 && attempt < 7) {
                     val retryAfter = resp.header("retry-after")?.toDoubleOrNull()
                     val waitSeconds = (retryAfter ?: 10.0 + attempt * 5.0).coerceIn(2.0, 65.0)
                     delay((waitSeconds * 1000.0).toLong())
                     return@use
                 }
+                // 4xx = bad request (bad model, bad key, etc.) — don't retry
+                if (resp.code in 400..499) throw RuntimeException(lastError)
+                // 5xx = server error — retry
+                if (attempt < 7) {
+                    delay((1500L * (attempt + 1)).coerceAtMost(8000L))
+                    return@use
+                }
                 throw RuntimeException(lastError)
             }
         }
+
         throw RuntimeException(lastError)
     }
 
-    /** Accept standard OpenAI JSON and produce a useful diagnostic for malformed responses. */
-    private fun extractChatContent(raw: String): String {
+    /**
+     * FIX: Extract chat content with USEFUL error messages.
+     * If provider returns {"error": {"message": "Invalid model..."}} we now
+     * surface that message instead of "no choices[0].message.content".
+     */
+    private fun extractChatContent(raw: String, providerName: String, model: String): String {
         return try {
-            val content = JSONObject(raw)
+            val json = JSONObject(raw)
+
+            // Check for provider error objects (Groq, OpenRouter return these)
+            val errorObj = json.optJSONObject("error")
+            if (errorObj != null) {
+                val errorMsg = errorObj.optString("message", errorObj.toString().take(200))
+                throw RuntimeException("$providerName API error (model=$model): $errorMsg")
+            }
+
+            val content = json
                 .optJSONArray("choices")
                 ?.optJSONObject(0)
                 ?.optJSONObject("message")
                 ?.optString("content")
                 ?.trim()
                 .orEmpty()
-            if (content.isNotBlank()) content
-            else throw RuntimeException("Provider returned valid JSON but no choices[0].message.content")
+
+            if (content.isNotBlank()) return content
+
+            // Build useful diagnostic
+            val keys = buildList {
+                val k = json.keys()
+                while (k.hasNext()) add(k.next())
+            }
+            val preview = raw.take(400).replace("\n", " ")
+            throw RuntimeException(
+                "$providerName returned JSON without expected content field.\n" +
+                "Model: $model\n" +
+                "Top-level keys: ${keys.joinToString(", ")}\n" +
+                "Response preview: $preview"
+            )
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Exception) {
-            val preview = raw.take(500).replace("\n", " ")
-            throw RuntimeException("Provider returned non-JSON response: $preview")
+            val preview = raw.take(500).replace("\n", "")
+            throw RuntimeException("$providerName returned non-JSON: $preview")
         }
     }
 
     private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
+        /** Real Groq model IDs. */
+        val VALID_GROQ_MODELS = setOf(
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "llama3-70b-8192",
+            "llama3-8b-8192",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+            "deepseek-r1-distill-llama-70b",
+            "qwen-qwq-32b"
+        )
+
         fun defaultModelFor(provider: LlmProvider, settings: UserSettings): String = when (provider) {
-            LlmProvider.GROQ -> "openai/gpt-oss-20b"
-            LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.2"
+            // FIX: was "openai/gpt-oss-20b" (DOES NOT EXIST on Groq)
+            LlmProvider.GROQ -> "llama-3.3-70b-versatile"
+            LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.3"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }
             LlmProvider.OPENAI_COMPAT_LOCAL -> settings.localOpenAiModel.ifBlank { "local-model" }

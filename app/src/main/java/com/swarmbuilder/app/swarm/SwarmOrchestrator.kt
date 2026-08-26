@@ -3,13 +3,23 @@ package com.swarmbuilder.app.swarm
 import com.swarmbuilder.app.models.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import org.json.JSONObject
 
-/** Cost-aware swarm with compiler-driven repair and resilient LLM response parsing. */
+/**
+ * SwarmBuilder v3 Orchestrator
+ *
+ * Each agent now uses its OWN AI configuration:
+ * - Architect → settings.architectConfig
+ * - Coder     → settings.coderConfig
+ * - Reviewer  → settings.reviewerConfig
+ *
+ * Falls back to preferredProvider if per-agent config is not set.
+ */
 class SwarmOrchestrator(
     private val settings: UserSettings,
     private val llm: LlmClient = LlmClient(settings)
 ) {
-    private val _logs = MutableSharedFlow<SwarmLog>(replay = 128)
+    private val _logs = MutableSharedFlow<SwarmLog>(replay = 256)
     val logs: SharedFlow<SwarmLog> = _logs
 
     private suspend fun log(agent: SwarmAgent, msg: String, level: LogLevel = LogLevel.INFO) {
@@ -18,6 +28,8 @@ class SwarmOrchestrator(
 
     suspend fun run(prompt: String): List<SourceFile> {
         val agents = buildAgents()
+
+        // ─ Architect ──────────────────────────────────
         val architect = agents.first { it.role == AgentRole.ARCHITECT }
         architect.status = AgentStatus.RUNNING
         log(architect, "Analysing prompt and designing app architecture…")
@@ -25,12 +37,15 @@ class SwarmOrchestrator(
         architect.status = AgentStatus.DONE
         log(architect, "Architecture ready: ${spec.appName}", LogLevel.SUCCESS)
 
+        // ── Coder ─────────────────────────────────────
         val coder = agents.first { it.role == AgentRole.CODER }
         coder.status = AgentStatus.RUNNING
         log(coder, "Generating source files…")
+        log(coder, "Using: ${coder.provider.displayName}, model=${coder.modelId}")
         val files = runCoder(coder, spec)
         coder.status = AgentStatus.DONE
         log(coder, "Generated ${files.size} source files", LogLevel.SUCCESS)
+
         return files
     }
 
@@ -40,22 +55,17 @@ class SwarmOrchestrator(
         buildError: String,
         attempt: Int
     ): List<SourceFile> {
-        val agent = SwarmAgent(
-            "repair-$attempt", "Repair", AgentRole.REVIEWER,
-            settings.preferredProvider, LlmClient.defaultModelFor(settings.preferredProvider, settings)
-        )
-        agent.status = AgentStatus.RUNNING
-        log(agent, "Compiler failure detected. Repair pass $attempt…")
+        val agents = buildAgents()
+        val reviewer = agents.first { it.role == AgentRole.REVIEWER }
+        reviewer.status = AgentStatus.RUNNING
+        log(reviewer, "Compiler failure detected. Repair pass $attempt…")
+        log(reviewer, "Using: ${reviewer.provider.displayName}, model=${reviewer.modelId}")
 
         val error = buildError.takeLast(9000)
         val filesJson = files.joinToString(",\n", "[", "]") { f ->
-            """{"path":"${f.relativePath}","content":${org.json.JSONObject.quote(f.content)}}"""
+            """{"path":"${f.relativePath}","content":${JSONObject.quote(f.content)}}"""
         }
-        val system = """
-            You are an Android build-fix agent. Fix ONLY errors indicated by Gradle output.
-            Return ONLY a JSON array of {"path":"...","content":"..."}.
-            Preserve working files and requested features. No explanation.
-        """.trimIndent()
+        val system = reviewer.systemPrompt
         val prompt = """
             App: ${spec.appName}
             Gradle error:
@@ -68,63 +78,59 @@ class SwarmOrchestrator(
             val response = llm.complete(
                 prompt = prompt,
                 systemPrompt = system,
-                provider = agent.provider,
-                modelId = agent.modelId,
+                provider = reviewer.provider,
+                modelId = reviewer.modelId,
+                agentConfig = settings.reviewerConfig,
                 maxOutputTokens = 2200
             )
             parseSourceFiles(response).also {
-                agent.status = AgentStatus.DONE
-                log(agent, "Repair pass $attempt produced ${it.size} files", LogLevel.SUCCESS)
+                reviewer.status = AgentStatus.DONE
+                log(reviewer, "Repair pass $attempt produced ${it.size} files", LogLevel.SUCCESS)
             }
         } catch (e: Exception) {
-            agent.status = AgentStatus.ERROR
-            log(agent, "Repair response failed: ${e.message}. Keeping last known-good files.", LogLevel.WARNING)
+            reviewer.status = AgentStatus.ERROR
+            log(reviewer, "Repair response failed: ${e.message}. Keeping last files.", LogLevel.WARNING)
             files
         }
     }
 
     private suspend fun runArchitect(agent: SwarmAgent, prompt: String): AppSpec {
-        val system = """
-            Expert Android architect. Return ONLY compact valid JSON:
-            {"appName":"MyApp","packageName":"com.example.myapp","description":"...","features":["..."]}
-            Keep description/features concise. No markdown.
-        """.trimIndent()
         val response = llm.complete(
             prompt = "Design an Android app for: $prompt",
-            systemPrompt = system,
+            systemPrompt = agent.systemPrompt,
             provider = agent.provider,
             modelId = agent.modelId,
+            agentConfig = settings.architectConfig,
             maxOutputTokens = 900
         )
         return parseAppSpec(prompt, response)
     }
 
     private suspend fun runCoder(agent: SwarmAgent, spec: AppSpec): List<SourceFile> {
-        val system = """
-            Expert Android developer. Generate a SMALL, COMPLETE, COMPILABLE Kotlin Android project.
-            Return ONLY JSON array of {"path":"...","content":"..."}. No markdown.
-            Include only files required for requested features.
-        """.trimIndent()
         val prompt = """
             App: ${spec.appName}
             Package: ${spec.packageName}
             Description: ${spec.description}
             Features: ${spec.features.joinToString(", ")}
         """.trimIndent()
+
         val response = llm.complete(
             prompt = prompt,
-            systemPrompt = system,
+            systemPrompt = agent.systemPrompt,
             provider = agent.provider,
             modelId = agent.modelId,
-            maxOutputTokens = 2800
+            agentConfig = settings.coderConfig,
+            maxOutputTokens = 3000
         )
         return parseSourceFiles(response)
     }
 
+    // ─── Parsing ───────────────────────────────────────
+
     private fun parseAppSpec(originalPrompt: String, json: String): AppSpec {
         return try {
             val cleaned = recoverJsonObject(json)
-            val obj = org.json.JSONObject(cleaned)
+            val obj = JSONObject(cleaned)
             AppSpec(
                 prompt = originalPrompt,
                 appName = obj.optString("appName", "MyApp"),
@@ -140,7 +146,6 @@ class SwarmOrchestrator(
         }
     }
 
-    /** Recover JSON accidentally wrapped in markdown or surrounded by model commentary. */
     private fun recoverJsonObject(raw: String): String {
         val cleaned = raw.trim()
             .removePrefix("```json")
@@ -155,32 +160,117 @@ class SwarmOrchestrator(
     }
 
     private fun parseSourceFiles(json: String): List<SourceFile> {
-        val cleaned = json.trim()
+        var cleaned = json.trim()
             .removePrefix("```json")
             .removePrefix("```JSON")
             .removePrefix("```")
             .removeSuffix("```")
             .trim()
+
         val start = cleaned.indexOf('[')
         val end = cleaned.lastIndexOf(']')
-        if (start < 0 || end <= start) throw IllegalArgumentException("No JSON file array found in model response")
-        val arr = org.json.JSONArray(cleaned.substring(start, end + 1))
+        if (start < 0 || end <= start) {
+            throw IllegalArgumentException(
+                "No JSON file array found in response. Preview: ${cleaned.take(300)}"
+            )
+        }
+        val arr = JSONArray(cleaned.substring(start, end + 1))
         return buildList {
             for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                add(SourceFile(obj.getString("path"), obj.getString("content")))
+                try {
+                    val obj = arr.getJSONObject(i)
+                    val path = obj.optString("path", "UnknownPath$i.kt")
+                    val content = obj.optString("content", "")
+                    if (content.isNotBlank()) {
+                        add(SourceFile(path, content))
+                    }
+                } catch (_: Exception) { }
             }
         }
     }
 
+    /**
+     * Build agents with per-agent config.
+     * Falls back to preferredProvider when per-agent config isn't set.
+     */
     private fun buildAgents(): List<SwarmAgent> {
-        val primary = settings.preferredProvider
+        fun buildAgent(role: AgentRole, config: AgentConfig): SwarmAgent {
+            val provider = if (config.provider != LlmProvider.GROQ) config.provider
+            else if (settings.preferredProvider != LlmProvider.GROQ) settings.preferredProvider
+            else LlmProvider.GROQ
+            val model = config.modelId.ifBlank { LlmClient.defaultModelFor(provider, settings) }
+            return SwarmAgent(
+                id = role.name.lowercase(),
+                name = role.displayName,
+                role = role,
+                jobDescription = role.jobDescription,
+                systemPrompt = buildSystemPrompt(role),
+                provider = provider,
+                modelId = model
+            )
+        }
+
         return listOf(
-            SwarmAgent("architect", "Architect", AgentRole.ARCHITECT, primary, LlmClient.defaultModelFor(primary, settings)),
-            SwarmAgent("coder", "Coder", AgentRole.CODER, primary, LlmClient.defaultModelFor(primary, settings)),
-            SwarmAgent("reviewer", "Repair", AgentRole.REVIEWER, primary, LlmClient.defaultModelFor(primary, settings)),
-            SwarmAgent("builder", "Builder", AgentRole.BUILDER, primary, LlmClient.defaultModelFor(primary, settings)),
-            SwarmAgent("publisher", "Publisher", AgentRole.PUBLISHER, primary, LlmClient.defaultModelFor(primary, settings))
+            buildAgent(AgentRole.ARCHITECT, settings.architectConfig),
+            buildAgent(AgentRole.CODER, settings.coderConfig),
+            buildAgent(AgentRole.REVIEWER, settings.reviewerConfig),
+            SwarmAgent(
+                id = "builder",
+                name = AgentRole.BUILDER.displayName,
+                role = AgentRole.BUILDER,
+                jobDescription = AgentRole.BUILDER.jobDescription,
+                systemPrompt = "",
+                provider = LlmProvider.GROQ,
+                modelId = ""
+            ),
+            SwarmAgent(
+                id = "publisher",
+                name = AgentRole.PUBLISHER.displayName,
+                role = AgentRole.PUBLISHER,
+                jobDescription = AgentRole.PUBLISHER.jobDescription,
+                systemPrompt = "",
+                provider = LlmProvider.GROQ,
+                modelId = ""
+            )
         )
+    }
+
+    /**
+     * Build the system prompt for each agent role.
+     * These are the instructions the AI reads.
+     */
+    private fun buildSystemPrompt(role: AgentRole): String = when (role) {
+        AgentRole.ARCHITECT -> """
+            You are an expert Android app architect.
+            Given a user's app idea, return ONLY a compact valid JSON object:
+            {"appName":"MyApp","packageName":"com.example.myapp","description":"...","features":["feature1","feature2"]}
+            - appName: short, camelCase name
+            - packageName: reverse-domain format
+            - description: one sentence
+            - features: 3-6 key features
+            No markdown, no explanation, just JSON.
+        """.trimIndent()
+
+        AgentRole.CODER -> """
+            You are an expert Android developer. Generate a SMALL, COMPLETE, COMPILABLE Kotlin Android project.
+            Return ONLY a JSON array of {"path":"relative/path/file.kt","content":"...file content..."}.
+            
+            Rules:
+            - Use Material Design 3 and Jetpack Compose
+            - Use Kotlin coroutines for async work
+            - Keep it minimal — only files needed for requested features
+            - Include AndroidManifest.xml, build.gradle, MainActivity.kt at minimum
+            - All code must compile on API 26+
+            - No markdown, no explanation, just the JSON array
+        """.trimIndent()
+
+        AgentRole.REVIEWER -> """
+            You are an Android build-fix agent. You receive Gradle build errors and the current source files.
+            Fix ONLY the errors indicated by the compiler output.
+            Return ONLY a JSON array of {"path":"relative/path/file.kt","content":"...fixed content..."}.
+            Preserve working files and requested features. No explanation, just the JSON array.
+        """.trimIndent()
+
+        else -> "You are a helpful Android assistant."
     }
 }
