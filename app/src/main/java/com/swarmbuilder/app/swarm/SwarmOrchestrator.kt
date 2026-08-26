@@ -3,17 +3,14 @@ package com.swarmbuilder.app.swarm
 import com.swarmbuilder.app.models.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
  * SwarmBuilder v3 Orchestrator
  *
- * Each agent now uses its OWN AI configuration:
- * - Architect → settings.architectConfig
- * - Coder     → settings.coderConfig
- * - Reviewer  → settings.reviewerConfig
- *
- * Falls back to preferredProvider if per-agent config is not set.
+ * Each agent uses settings.preferredProvider with the correct model from LlmClient.
+ * LlmClient handles auto-fallback when the preferred provider fails.
  */
 class SwarmOrchestrator(
     private val settings: UserSettings,
@@ -37,7 +34,7 @@ class SwarmOrchestrator(
         architect.status = AgentStatus.DONE
         log(architect, "Architecture ready: ${spec.appName}", LogLevel.SUCCESS)
 
-        // ── Coder ─────────────────────────────────────
+        // ── Coder ────────────────────────────────────
         val coder = agents.first { it.role == AgentRole.CODER }
         coder.status = AgentStatus.RUNNING
         log(coder, "Generating source files…")
@@ -65,7 +62,7 @@ class SwarmOrchestrator(
         val filesJson = files.joinToString(",\n", "[", "]") { f ->
             """{"path":"${f.relativePath}","content":${JSONObject.quote(f.content)}}"""
         }
-        val system = reviewer.systemPrompt
+        val system = buildSystemPrompt(AgentRole.REVIEWER)
         val prompt = """
             App: ${spec.appName}
             Gradle error:
@@ -80,7 +77,6 @@ class SwarmOrchestrator(
                 systemPrompt = system,
                 provider = reviewer.provider,
                 modelId = reviewer.modelId,
-                agentConfig = settings.reviewerConfig,
                 maxOutputTokens = 2200
             )
             parseSourceFiles(response).also {
@@ -95,18 +91,19 @@ class SwarmOrchestrator(
     }
 
     private suspend fun runArchitect(agent: SwarmAgent, prompt: String): AppSpec {
+        val system = buildSystemPrompt(AgentRole.ARCHITECT)
         val response = llm.complete(
             prompt = "Design an Android app for: $prompt",
-            systemPrompt = agent.systemPrompt,
+            systemPrompt = system,
             provider = agent.provider,
             modelId = agent.modelId,
-            agentConfig = settings.architectConfig,
             maxOutputTokens = 900
         )
         return parseAppSpec(prompt, response)
     }
 
     private suspend fun runCoder(agent: SwarmAgent, spec: AppSpec): List<SourceFile> {
+        val system = buildSystemPrompt(AgentRole.CODER)
         val prompt = """
             App: ${spec.appName}
             Package: ${spec.packageName}
@@ -116,16 +113,15 @@ class SwarmOrchestrator(
 
         val response = llm.complete(
             prompt = prompt,
-            systemPrompt = agent.systemPrompt,
+            systemPrompt = system,
             provider = agent.provider,
             modelId = agent.modelId,
-            agentConfig = settings.coderConfig,
             maxOutputTokens = 3000
         )
         return parseSourceFiles(response)
     }
 
-    // ─── Parsing ───────────────────────────────────────
+    // ─── Parsing ──────────────────────────────────────
 
     private fun parseAppSpec(originalPrompt: String, json: String): AppSpec {
         return try {
@@ -160,7 +156,7 @@ class SwarmOrchestrator(
     }
 
     private fun parseSourceFiles(json: String): List<SourceFile> {
-        var cleaned = json.trim()
+        val cleaned = json.trim()
             .removePrefix("```json")
             .removePrefix("```JSON")
             .removePrefix("```")
@@ -190,54 +186,22 @@ class SwarmOrchestrator(
     }
 
     /**
-     * Build agents with per-agent config.
-     * Falls back to preferredProvider when per-agent config isn't set.
+     * Build agents with the correct provider/model from settings.
      */
     private fun buildAgents(): List<SwarmAgent> {
-        fun buildAgent(role: AgentRole, config: AgentConfig): SwarmAgent {
-            val provider = if (config.provider != LlmProvider.GROQ) config.provider
-            else if (settings.preferredProvider != LlmProvider.GROQ) settings.preferredProvider
-            else LlmProvider.GROQ
-            val model = config.modelId.ifBlank { LlmClient.defaultModelFor(provider, settings) }
-            return SwarmAgent(
-                id = role.name.lowercase(),
-                name = role.displayName,
-                role = role,
-                jobDescription = role.jobDescription,
-                systemPrompt = buildSystemPrompt(role),
-                provider = provider,
-                modelId = model
-            )
-        }
-
+        val provider = settings.preferredProvider
+        val model = LlmClient.defaultModelFor(provider, settings)
         return listOf(
-            buildAgent(AgentRole.ARCHITECT, settings.architectConfig),
-            buildAgent(AgentRole.CODER, settings.coderConfig),
-            buildAgent(AgentRole.REVIEWER, settings.reviewerConfig),
-            SwarmAgent(
-                id = "builder",
-                name = AgentRole.BUILDER.displayName,
-                role = AgentRole.BUILDER,
-                jobDescription = AgentRole.BUILDER.jobDescription,
-                systemPrompt = "",
-                provider = LlmProvider.GROQ,
-                modelId = ""
-            ),
-            SwarmAgent(
-                id = "publisher",
-                name = AgentRole.PUBLISHER.displayName,
-                role = AgentRole.PUBLISHER,
-                jobDescription = AgentRole.PUBLISHER.jobDescription,
-                systemPrompt = "",
-                provider = LlmProvider.GROQ,
-                modelId = ""
-            )
+            SwarmAgent("architect", "Architect", AgentRole.ARCHITECT, provider, model),
+            SwarmAgent("coder", "Coder", AgentRole.CODER, provider, model),
+            SwarmAgent("reviewer", "Reviewer", AgentRole.REVIEWER, provider, model),
+            SwarmAgent("builder", "Builder", AgentRole.BUILDER, provider, model),
+            SwarmAgent("publisher", "Publisher", AgentRole.PUBLISHER, provider, model)
         )
     }
 
     /**
-     * Build the system prompt for each agent role.
-     * These are the instructions the AI reads.
+     * System prompts for each agent role — instructions the AI reads.
      */
     private fun buildSystemPrompt(role: AgentRole): String = when (role) {
         AgentRole.ARCHITECT -> """
