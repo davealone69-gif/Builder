@@ -55,12 +55,7 @@ class LlmClient(private val settings: UserSettings) {
         maxOutputTokens: Int
     ): String {
         val resolvedModel = resolveGroqModel(model)
-        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
-        val req = Request.Builder()
-            .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
-            .addHeader("Authorization", bearerToken(settings.groqApiKey))
-            .post(body).build()
-        return executeAndExtractContentWithRetry(req, providerName = "Groq", model = resolvedModel)
+        return groqCompleteWithFallback(prompt, system, resolvedModel, maxOutputTokens)
     }
 
     /**
@@ -68,14 +63,55 @@ class LlmClient(private val settings: UserSettings) {
      * "openai/gpt-oss-20b" does NOT exist on Groq — that was the crash bug.
      */
     private fun resolveGroqModel(configured: String): String = when {
+        // Blank → use best free Groq model (the OG that's been available since day 1)
+        configured.isBlank() -> GROQ_DEFAULT_MODEL
+        // The buggy legacy default
+        configured == "openai/gpt-oss-20b" -> GROQ_DEFAULT_MODEL
         // Already a valid Groq model ID
         configured in VALID_GROQ_MODELS -> configured
-        // The buggy legacy default
-        configured == "openai/gpt-oss-20b" -> "llama-3.3-70b-versatile"
-        // Blank → use best free Groq model
-        configured.isBlank() -> "llama-3.3-70b-versatile"
         // User typed something — try it as-is
         else -> configured
+    }
+
+    /**
+     * Auto-fallback: if a Groq model returns 404/invalid_request_error,
+     * try the next model in the list until one works.
+     * This prevents the "model does not exist" crash.
+     */
+    private suspend fun groqCompleteWithFallback(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
+        // Try models in order until one works
+        val modelsToTry = buildList {
+            add(model) // try requested model first
+            addAll(GROQ_FALLBACK_MODELS.filter { it != model })
+        }
+
+        var lastError: String? = null
+        for (m in modelsToTry) {
+            try {
+                val body = chatBody(prompt, system, m, maxOutputTokens).toRequestBody(jsonMedia)
+                val req = Request.Builder()
+                    .url("${LlmProvider.GROQ.baseUrl}/chat/completions")
+                    .addHeader("Authorization", bearerToken(settings.groqApiKey))
+                    .post(body).build()
+                return executeAndExtractContentWithRetry(req, providerName = "Groq", model = m)
+            } catch (e: Exception) {
+                val msg = e.message ?: ""
+                // Only retry on model-not-found type errors, not rate limits or auth errors
+                if (msg.contains("model_not_found", ignoreCase = true) ||
+                    msg.contains("does not exist", ignoreCase = true) ||
+                    msg.contains("404", ignoreCase = true)) {
+                    lastError = msg
+                    continue // try next model
+                }
+                throw e // non-model errors should propagate immediately
+            }
+        }
+        throw RuntimeException("All Groq models failed. Last error: $lastError")
     }
 
     private suspend fun hfComplete(prompt: String, model: String, maxOutputTokens: Int): String {
@@ -334,12 +370,24 @@ class LlmClient(private val settings: UserSettings) {
     private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
-        /** Real Groq model IDs. */
-        val VALID_GROQ_MODELS = setOf(
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
-            "llama3-70b-8192",
+        /** Primary Groq model — the OG that's been available since day 1. */
+        const val GROQ_DEFAULT_MODEL = "llama3-70b-8192"
+
+        /** Fallback models tried in order if the primary fails with 404/model_not_found. */
+        val GROQ_FALLBACK_MODELS = listOf(
             "llama3-8b-8192",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+            "llama-3.1-8b-instant"
+        )
+
+        /** All known Groq model IDs (for validation). */
+        val VALID_GROQ_MODELS = setOf(
+            GROQ_DEFAULT_MODEL,
+            "llama3-8b-8192",
+            "llama-3.1-8b-instant",
+            "llama-3.1-70b-versatile",
+            "llama-3.3-70b-versatile",
             "mixtral-8x7b-32768",
             "gemma2-9b-it",
             "deepseek-r1-distill-llama-70b",
@@ -347,8 +395,8 @@ class LlmClient(private val settings: UserSettings) {
         )
 
         fun defaultModelFor(provider: LlmProvider, settings: UserSettings): String = when (provider) {
-            // FIX: was "openai/gpt-oss-20b" (DOES NOT EXIST on Groq)
-            LlmProvider.GROQ -> "llama-3.3-70b-versatile"
+            // FIX: use the OG model that's been on Groq since day 1
+            LlmProvider.GROQ -> GROQ_DEFAULT_MODEL
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.3"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }

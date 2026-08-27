@@ -22,8 +22,8 @@ class LlmClientTest {
     }
 
     @Test
-    fun `defaultModelFor GROQ returns llama model`() {
-        assertEquals("llama-3.3-70b-versatile", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
+    fun `defaultModelFor GROQ returns llama3-70b-8192`() {
+        assertEquals("llama3-70b-8192", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
     }
 
     @Test
