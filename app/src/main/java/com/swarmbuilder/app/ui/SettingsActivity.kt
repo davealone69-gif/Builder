@@ -1,9 +1,14 @@
 package com.swarmbuilder.app.ui
 
 import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
+import com.swarmbuilder.app.R
 import com.swarmbuilder.app.SwarmBuilderApp
 import com.swarmbuilder.app.databinding.ActivitySettingsBinding
+import com.swarmbuilder.app.models.AgentConfig
 import com.swarmbuilder.app.models.LlmProvider
 import com.swarmbuilder.app.models.UserSettings
 
@@ -25,49 +30,87 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings(s: UserSettings) {
+        // Global keys
         binding.etGroqKey.setText(s.groqApiKey)
         binding.etHfToken.setText(s.huggingFaceToken)
         binding.etOrKey.setText(s.openRouterApiKey)
+        // GitHub
         binding.etGhToken.setText(s.githubToken)
         binding.etGhUser.setText(s.githubUsername)
+        // Local
         binding.switchOllama.isChecked = s.useLocalOllama
         binding.etOllamaModel.setText(s.ollamaModel)
         binding.etLocalOpenAiUrl.setText(s.localOpenAiBaseUrl)
         binding.etLocalOpenAiModel.setText(s.localOpenAiModel)
+        // Custom provider
         binding.etCustomUrl.setText(s.customProviderUrl)
         binding.etCustomModel.setText(s.customProviderModel)
         binding.etCustomKey.setText(s.customProviderKey)
+        // Local-first toggle
+        binding.switchLocalFirst.isChecked = s.localFirst
 
+        // Provider spinners
         val providers = LlmProvider.values().map { it.displayName }
-        val idx = LlmProvider.values().indexOfFirst { it == s.preferredProvider }
-        binding.spinnerProvider.adapter = android.widget.ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            providers
-        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-        if (idx >= 0) binding.spinnerProvider.setSelection(idx)
-        updateCustomFieldsVisibility(idx)
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, providers)
+            .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        // Show/hide custom fields when provider changes
-        binding.spinnerProvider.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+        binding.spinnerProvider.adapter = adapter
+        binding.spArchProvider.adapter = adapter
+        binding.spCoderProvider.adapter = adapter
+        binding.spReviewerProvider.adapter = adapter
+
+        // Set selections
+        binding.spinnerProvider.setSelection(s.preferredProvider.ordinal)
+        binding.spArchProvider.setSelection(s.architectConfig.provider.ordinal)
+        binding.spCoderProvider.setSelection(s.coderConfig.provider.ordinal)
+        binding.spReviewerProvider.setSelection(s.reviewerConfig.provider.ordinal)
+
+        // Per-agent fields
+        binding.etArchModel.setText(s.architectConfig.modelId)
+        binding.etArchUrl.setText(s.architectConfig.baseUrl)
+        binding.etArchKey.setText(s.architectConfig.apiKey)
+        binding.etArchPrompt.setText(s.architectConfig.systemPrompt)
+
+        binding.etCoderModel.setText(s.coderConfig.modelId)
+        binding.etCoderUrl.setText(s.coderConfig.baseUrl)
+        binding.etCoderKey.setText(s.coderConfig.apiKey)
+        binding.etCoderPrompt.setText(s.coderConfig.systemPrompt)
+
+        binding.etReviewerModel.setText(s.reviewerConfig.modelId)
+        binding.etReviewerUrl.setText(s.reviewerConfig.baseUrl)
+        binding.etReviewerKey.setText(s.reviewerConfig.apiKey)
+        binding.etReviewerPrompt.setText(s.reviewerConfig.systemPrompt)
+
+        // Hide custom provider fields unless "Custom" is selected
+        updateCustomFieldsVisibility(s.preferredProvider.ordinal)
+        binding.spinnerProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 updateCustomFieldsVisibility(position)
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     private fun updateCustomFieldsVisibility(selectedIdx: Int) {
-        val selectedProvider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
-        val showCustom = selectedProvider == LlmProvider.CUSTOM
-        binding.etCustomUrl.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
-        // Hide the custom model and key rows too — find them by walking up from the EditText
-        binding.etCustomModel.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
-        binding.etCustomKey.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
-        // Also hide the labels above them — simpler: just hide the whole group
+        val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
+        val show = provider == LlmProvider.CUSTOM
+        binding.etCustomUrl.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
+        binding.etCustomModel.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
+        binding.etCustomKey.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private fun saveSettings(app: SwarmBuilderApp) {
+        fun readAgentConfig(spinner: android.widget.Spinner, modelField: android.widget.EditText, urlField: android.widget.EditText, keyField: android.widget.EditText, promptField: android.widget.EditText): AgentConfig {
+            val provider = LlmProvider.values().getOrElse(spinner.selectedItemPosition) { LlmProvider.GROQ }
+            return AgentConfig(
+                provider = provider,
+                modelId = modelField.text.toString().trim(),
+                baseUrl = urlField.text.toString().trim(),
+                apiKey = keyField.text.toString().trim(),
+                systemPrompt = promptField.text.toString().trim()
+            )
+        }
+
         val selectedIdx = binding.spinnerProvider.selectedItemPosition
         val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
         val settings = UserSettings(
@@ -79,12 +122,15 @@ class SettingsActivity : AppCompatActivity() {
             preferredProvider = provider,
             useLocalOllama = binding.switchOllama.isChecked,
             ollamaModel = binding.etOllamaModel.text.toString().trim().ifBlank { "llama3" },
-            localOpenAiBaseUrl = binding.etLocalOpenAiUrl.text.toString().trim()
-                .ifBlank { "http://127.0.0.1:8081/v1" },
+            localOpenAiBaseUrl = binding.etLocalOpenAiUrl.text.toString().trim().ifBlank { "http://127.0.0.1:8081/v1" },
             localOpenAiModel = binding.etLocalOpenAiModel.text.toString().trim(),
             customProviderUrl = binding.etCustomUrl.text.toString().trim(),
             customProviderModel = binding.etCustomModel.text.toString().trim(),
-            customProviderKey = binding.etCustomKey.text.toString().trim()
+            customProviderKey = binding.etCustomKey.text.toString().trim(),
+            localFirst = binding.switchLocalFirst.isChecked,
+            architectConfig = readAgentConfig(binding.spArchProvider, binding.etArchModel, binding.etArchUrl, binding.etArchKey, binding.etArchPrompt),
+            coderConfig = readAgentConfig(binding.spCoderProvider, binding.etCoderModel, binding.etCoderUrl, binding.etCoderKey, binding.etCoderPrompt),
+            reviewerConfig = readAgentConfig(binding.spReviewerProvider, binding.etReviewerModel, binding.etReviewerUrl, binding.etReviewerKey, binding.etReviewerPrompt)
         )
         app.saveSettings(settings)
         finish()

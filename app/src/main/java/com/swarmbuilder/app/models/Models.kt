@@ -1,10 +1,9 @@
 package com.swarmbuilder.app.models
 
 /**
- * Represents a single agent in the AI swarm, backed by a free LLM provider.
+ * Represents a single agent in the AI swarm.
  *
- * v3 update: Added jobDescription field (with default) so it doesn't break
- * existing call sites.
+ * v4: Added systemPrompt to allow custom AI instructions per agent.
  */
 data class SwarmAgent(
     val id: String,
@@ -13,37 +12,35 @@ data class SwarmAgent(
     val provider: LlmProvider,
     val modelId: String,
     var status: AgentStatus = AgentStatus.IDLE,
-    val jobDescription: String = role.description,   // NEW (with safe default)
-    val systemPrompt: String = ""                     // NEW (with safe default)
+    val jobDescription: String = role.description,
+    val systemPrompt: String = ""
 )
 
 enum class AgentRole(val description: String) {
     ARCHITECT("Designs overall app architecture and file structure"),
     CODER("Writes Kotlin/XML source code for Android"),
-    REVIEWER("Reviews generated code for correctness and best practices"),
+    REVIEWER("Reviews generated code and fixes Gradle build errors"),
     BUILDER("Compiles source files and assembles the APK"),
     PUBLISHER("Pushes the project to GitHub")
 }
 
-enum class AgentStatus {
-    IDLE, RUNNING, DONE, ERROR
-}
+enum class AgentStatus { IDLE, RUNNING, DONE, ERROR }
 
 /**
- * v3: Each agent (Architect / Coder / Reviewer) can have its OWN AI config:
- * - Provider (Groq, Ollama, etc.)
+ * v4: Per-agent AI config.
+ * Each agent (Architect / Coder / Reviewer) has its OWN:
+ * - Provider (Groq, OpenRouter, Ollama, Custom, etc.)
  * - Model name (blank = use provider default)
- * - Base URL (blank = use provider default; e.g. http://192.168.1.5:11434)
- * - API key (blank = use global key from UserSettings)
- *
- * This lets you point different agents at different AIs — e.g. Architect
- * on Groq (fast JSON), Coder on Ollama (free/unlimited), Reviewer on OpenRouter.
+ * - Base URL (blank = use provider default)
+ * - API key (blank = use global key)
+ * - System prompt (blank = use default instructions)
  */
 data class AgentConfig(
     val provider: LlmProvider = LlmProvider.GROQ,
     val modelId: String = "",
-    val baseUrl: String = "",       // empty = use provider's default baseUrl
-    val apiKey: String = ""         // empty = use global key from UserSettings
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    val systemPrompt: String = ""
 )
 
 enum class LlmProvider(val displayName: String, val baseUrl: String) {
@@ -54,13 +51,8 @@ enum class LlmProvider(val displayName: String, val baseUrl: String) {
     OPENAI_COMPAT_LOCAL("Local OpenAI-Compatible", "http://127.0.0.1:8081/v1"),
     CUSTOM("Custom (your own URL)", "https://api.openai.com/v1");
 
-    /** v3: Does this provider accept a system prompt in chat completions? */
-    val supportsSystemPrompt: Boolean
-        get() = this != HUGGINGFACE
-
-    /** v3: Does this provider need an API key to work? */
-    val requiresApiKey: Boolean
-        get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM
+    val supportsSystemPrompt: Boolean get() = this != HUGGINGFACE
+    val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM
 }
 
 data class AppSpec(
@@ -71,10 +63,7 @@ data class AppSpec(
     val features: List<String> = emptyList()
 )
 
-data class SourceFile(
-    val relativePath: String,
-    val content: String
-)
+data class SourceFile(val relativePath: String, val content: String)
 
 data class BuildResult(
     val success: Boolean,
@@ -95,43 +84,49 @@ data class SwarmLog(
 enum class LogLevel { INFO, SUCCESS, WARNING, ERROR }
 
 /**
- * v3: UserSettings now supports per-agent AI config.
- * All original fields kept exactly as they were — old code keeps working.
- * New fields added at the end with safe defaults.
+ * v4: Full settings with:
+ * - Global API keys
+ * - GitHub settings
+ * - Preferred provider (fallback)
+ * - Per-agent AI overrides (Architect / Coder / Reviewer)
+ * - Custom provider (ANY URL + model + key)
+ * - Local-first toggle (try Ollama before cloud)
  */
 data class UserSettings(
-    // ─ Original fields (unchanged) ─────────────────
+    // ── Global API keys ─────────────────────────────
     val groqApiKey: String = "",
     val huggingFaceToken: String = "",
     val openRouterApiKey: String = "",
+
+    // ─ GitHub ──────────────────────────────────────
     val githubToken: String = "",
     val githubUsername: String = "",
+    val githubRepoName: String = "",
+
+    // ── Default provider (fallback) ─────────────────
     val preferredProvider: LlmProvider = LlmProvider.OPENROUTER,
+
+    // ── Local / Ollama ──────────────────────────────
     val useLocalOllama: Boolean = false,
     val ollamaModel: String = "llama3",
     val localOpenAiBaseUrl: String = "http://127.0.0.1:8081/v1",
     val localOpenAiModel: String = "",
 
-    // ── NEW v3: GitHub repo name (for push button) ──
-    val githubRepoName: String = "",
-
-    // ── NEW v4: Custom provider (ANY URL + ANY model + ANY key) ──
+    // ── Custom provider ────────────────────────────
     val customProviderUrl: String = "",
     val customProviderModel: String = "",
     val customProviderKey: String = "",
 
-    // ── NEW v3: Per-agent AI overrides ──────────────
+    // ── v4 NEW: Local-first routing ─────────────────
+    val localFirst: Boolean = false,
+
+    // ── v4 NEW: Per-agent AI overrides ──────────────
     val architectConfig: AgentConfig = AgentConfig(),
     val coderConfig: AgentConfig = AgentConfig(),
     val reviewerConfig: AgentConfig = AgentConfig()
 ) {
 
-    // ── NEW v3: Helper methods ──────────────────────
-
-    /**
-     * Resolve the API key to use for a provider.
-     * Priority: agent override > global key > custom provider key.
-     */
+    /** Resolve API key: agent override > custom > global. */
     fun resolveApiKey(provider: LlmProvider, agentOverride: String = ""): String {
         if (agentOverride.isNotBlank()) return agentOverride
         return when (provider) {
@@ -139,23 +134,16 @@ data class UserSettings(
             LlmProvider.HUGGINGFACE -> huggingFaceToken
             LlmProvider.OPENROUTER -> openRouterApiKey
             LlmProvider.CUSTOM -> customProviderKey
-            LlmProvider.OLLAMA_LOCAL,
-            LlmProvider.OPENAI_COMPAT_LOCAL -> ""  // local = no key needed
+            LlmProvider.OLLAMA_LOCAL, LlmProvider.OPENAI_COMPAT_LOCAL -> ""
         }
     }
 
-    /**
-     * Resolve the base URL to use for a provider.
-     * Priority: agent override > custom provider URL > provider default.
-     * Special case: Ollama on Android needs user's PC LAN IP, not localhost.
-     */
+    /** Resolve base URL: agent override > custom > provider default. */
     fun resolveBaseUrl(provider: LlmProvider, agentOverride: String = ""): String {
         if (agentOverride.isNotBlank()) return agentOverride.trimEnd('/')
-        // Custom provider always uses user-configured URL
         if (provider == LlmProvider.CUSTOM) {
             return customProviderUrl.ifBlank { provider.baseUrl }.trimEnd('/')
         }
-        // If Ollama and user configured a non-localhost URL, use that
         if (provider == LlmProvider.OLLAMA_LOCAL &&
             localOpenAiBaseUrl.isNotBlank() &&
             !localOpenAiBaseUrl.contains("127.0.0.1") &&
@@ -165,33 +153,21 @@ data class UserSettings(
         return provider.baseUrl.trimEnd('/')
     }
 
-    /**
-     * Check if a provider is actually usable with current settings.
-     * Cloud providers need a key; local providers always work.
-     */
+    /** Check if a provider is usable. */
     fun isProviderAvailable(provider: LlmProvider): Boolean {
         if (!provider.requiresApiKey) return true
         return resolveApiKey(provider).isNotBlank()
     }
 
-    /**
-     * Get the list of providers that are currently usable.
-     * Used to build fallback chains in LlmClient.
-     */
     fun availableProviders(): List<LlmProvider> =
         LlmProvider.values().filter { isProviderAvailable(it) }
 
-    /**
-     * Pick the best fallback provider when the preferred one fails.
-     * Prefers: another cloud provider with a key > local providers.
-     */
     fun pickFallbackProvider(exclude: LlmProvider): LlmProvider? {
         val candidates = availableProviders().filter { it != exclude }
-        // Prefer fast cloud providers first
         candidates.firstOrNull { it == LlmProvider.GROQ }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.OPENROUTER }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.HUGGINGFACE }?.let { return it }
-        // Then local providers (unlimited but slower)
+        candidates.firstOrNull { it == LlmProvider.CUSTOM }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.OLLAMA_LOCAL }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.OPENAI_COMPAT_LOCAL }?.let { return it }
         return null

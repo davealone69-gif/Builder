@@ -43,11 +43,21 @@ class ModelsTest {
     }
 
     @Test
-    fun `UserSettings defaults use OPENROUTER provider`() {
+    fun `UserSettings defaults use OPENROUTER provider and local-first off`() {
         val settings = UserSettings()
         assertEquals(LlmProvider.OPENROUTER, settings.preferredProvider)
         assertFalse(settings.useLocalOllama)
+        assertFalse(settings.localFirst)
         assertEquals("llama3", settings.ollamaModel)
+    }
+
+    @Test
+    fun `AgentConfig has blank defaults`() {
+        val config = AgentConfig()
+        assertEquals("", config.modelId)
+        assertEquals("", config.baseUrl)
+        assertEquals("", config.apiKey)
+        assertEquals("", config.systemPrompt)
     }
 
     @Test

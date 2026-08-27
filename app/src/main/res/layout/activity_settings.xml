@@ -26,6 +26,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- ═══════ GLOBAL API KEYS ═══════ -->
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/label_groq_key" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
             <com.google.android.material.textfield.TextInputLayout
@@ -53,8 +54,9 @@
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- ═══════ GITHUB ═══════ -->
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_gh_token" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
+                android:text="@string/label_gh_token" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent" android:layout_height="wrap_content">
@@ -71,20 +73,17 @@
                     android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- ═══════ DEFAULT PROVIDER ═══════ -->
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_provider" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="8dp"/>
+                android:text="@string/label_provider" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
             <Spinner android:id="@+id/spinner_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_local_openai_url" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_url"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:inputType="textUri" android:text="http://127.0.0.1:8081/v1" />
-            </com.google.android.material.textfield.TextInputLayout>
+            <!-- ═══════ LOCAL-FIRST TOGGLE ═══════ -->
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_local_first"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Local-First (try Ollama before cloud)" android:layout_marginTop="12dp" />
 
+            <!-- ═══════ CUSTOM PROVIDER ═══════ -->
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/label_custom_url" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
             <com.google.android.material.textfield.TextInputLayout
@@ -115,28 +114,115 @@
                     android:inputType="textPassword" android:hint="@string/hint_custom_key" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="@string/hint_local_openai_model">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_model"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            <!-- ═══════ PER-AGENT CONFIGS ═══════ -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Per-Agent AI Config" android:textAppearance="?attr/textAppearanceSubtitle1"
+                android:textStyle="bold" android:layout_marginTop="16dp"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Each agent can use a different AI. Leave blank to use defaults."
+                android:textAppearance="?attr/textAppearanceCaption" android:layout_marginBottom="8dp"/>
+
+            <!-- ── Architect ─ -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="📐 Architect" android:textAppearance="?attr/textAppearanceSubtitle2" android:layout_marginTop="8dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Provider" android:textAppearance="?attr/textAppearanceCaption"/>
+            <Spinner android:id="@+id/sp_arch_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Model (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_arch_model" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_ollama"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="@string/label_use_ollama" android:layout_marginTop="12dp" />
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="@string/hint_ollama_model">
-                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_ollama_model"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="URL (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_arch_url" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="API Key (blank = global)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_arch_key" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="System Prompt (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_arch_prompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ─ Coder ── -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="💻 Coder" android:textAppearance="?attr/textAppearanceSubtitle2" android:layout_marginTop="12dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Provider" android:textAppearance="?attr/textAppearanceCaption"/>
+            <Spinner android:id="@+id/sp_coder_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Model (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_coder_model" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="URL (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_coder_url" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="API Key (blank = global)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_coder_key" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="System Prompt (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_coder_prompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ── Reviewer ── -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="🔧 Reviewer" android:textAppearance="?attr/textAppearanceSubtitle2" android:layout_marginTop="12dp"/>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Provider" android:textAppearance="?attr/textAppearanceCaption"/>
+            <Spinner android:id="@+id/sp_reviewer_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Model (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_reviewer_model" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="URL (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_reviewer_url" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="API Key (blank = global)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_reviewer_key" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="System Prompt (blank = default)" android:textAppearance="?attr/textAppearanceCaption" android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox" android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_reviewer_prompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textMultiLine" android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ═══════ SAVE ═══════ -->
             <com.google.android.material.button.MaterialButton android:id="@+id/btn_save"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/btn_save" android:textAllCaps="false" android:layout_marginTop="16dp" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
