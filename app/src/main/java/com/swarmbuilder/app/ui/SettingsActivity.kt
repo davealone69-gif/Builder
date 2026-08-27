@@ -94,9 +94,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateCustomFieldsVisibility(selectedIdx: Int) {
         val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
         val show = provider == LlmProvider.CUSTOM
-        binding.etCustomUrl.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
-        binding.etCustomModel.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
-        binding.etCustomKey.parent?.parent?.visibility = if (show) View.VISIBLE else View.GONE
+        val visible = if (show) android.view.View.VISIBLE else android.view.View.GONE
+        binding.etCustomUrl.parent?.parent?.let { it.visibility = visible }
+        binding.etCustomModel.parent?.parent?.let { it.visibility = visible }
+        binding.etCustomKey.parent?.parent?.let { it.visibility = visible }
     }
 
     private fun saveSettings(app: SwarmBuilderApp) {

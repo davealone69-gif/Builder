@@ -78,6 +78,36 @@
                 android:text="@string/label_provider" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
             <Spinner android:id="@+id/spinner_provider" android:layout_width="match_parent" android:layout_height="wrap_content" />
 
+            <!-- ═══════ OLLAMA LOCAL ═══════ -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/label_local_openai_url" android:textAppearance="?attr/textAppearanceBody2" android:layout_marginTop="12dp"/>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_url"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="textUri" android:text="http://127.0.0.1:8081/v1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="@string/hint_local_openai_model">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_local_open_ai_model"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_ollama"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/label_use_ollama" android:layout_marginTop="12dp" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="@string/hint_ollama_model">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_ollama_model"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- ═══════ LOCAL-FIRST TOGGLE ═══════ -->
             <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_local_first"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
