@@ -15,11 +15,11 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * v4 LLM Client with local-first routing.
+ * v5 LLM Client with robust automatic fallback.
  *
- * When settings.localFirst = true, tries Ollama first for EVERY request.
- * Only falls back to the cloud provider if Ollama fails (unreachable,
- * no model, etc). This saves cloud tokens when local LLM is available.
+ * When a provider fails (connection error, invalid key, model not found),
+ * the client automatically tries the next provider in the fallback chain.
+ * This means the app works even if the user's saved provider is broken.
  */
 class LlmClient(private val settings: UserSettings) {
 
@@ -29,33 +29,29 @@ class LlmClient(private val settings: UserSettings) {
         /** Current working Groq models (August 2026). */
         const val GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b"
         val GROQ_FALLBACK_MODELS = listOf("openai/gpt-oss-20b", "qwen/qwen3.6-27b")
-        val VALID_GROQ_MODELS = setOf(
-            GROQ_DEFAULT_MODEL, "openai/gpt-oss-20b", "openai/gpt-oss-120b",
-            "openai/gpt-oss-safeguard-20b", "qwen/qwen3.6-27b"
-        )
 
         fun defaultModelFor(provider: LlmProvider, settings: UserSettings): String = when (provider) {
+            LlmProvider.HERMES_AGENT -> "hermes-agent"
             LlmProvider.GROQ -> GROQ_DEFAULT_MODEL
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.3"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }
             LlmProvider.OPENAI_COMPAT_LOCAL -> settings.localOpenAiModel.ifBlank { "local-model" }
             LlmProvider.CUSTOM -> settings.customProviderModel.ifBlank { "" }
-            LlmProvider.HERMES_AGENT -> "hermes-agent"
         }
     }
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(180, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)   // Shorter timeout for local
+        .readTimeout(120, TimeUnit.SECONDS)     // Longer read for code generation
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
 
     /**
-     * Main entry point. Routes to the right provider with fallback.
-     * When localFirst is enabled, tries Ollama first before cloud.
+     * Main entry point. Tries the requested provider, then falls back
+     * through the chain automatically.
      */
     suspend fun complete(
         prompt: String,
@@ -65,24 +61,79 @@ class LlmClient(private val settings: UserSettings) {
         maxOutputTokens: Int = 2048,
         useLocalFirst: Boolean = settings.localFirst
     ): String = withContext(Dispatchers.IO) {
-        // ─ Local-first routing ──────────────────────
-        if (useLocalFirst) {
+        // Build the attempt chain: requested provider first, then fallbacks
+        val attemptChain = mutableListOf<Pair<LlmProvider, String>>()
+        attemptChain.add(Pair(provider, modelId))
+
+        // Add fallback providers
+        val fallbacks = settings.getFallbackChain(provider)
+        for (fb in fallbacks) {
+            val fbModel = defaultModelFor(fb, settings)
+            attemptChain.add(Pair(fb, fbModel))
+        }
+
+        var lastError: String? = null
+        for ((attemptProvider, attemptModel) in attemptChain) {
             try {
-                Log.i(TAG, "Local-first: trying Ollama (${settings.ollamaModel.ifBlank { "llama3" }}) before $provider")
-                return@withContext ollamaComplete(prompt, systemPrompt, settings.ollamaModel.ifBlank { "llama3" })
+                Log.i(TAG, "Trying ${attemptProvider.displayName} (model=$attemptModel)")
+                val result = tryProvider(attemptProvider, attemptModel, prompt, systemPrompt, maxOutputTokens, useLocalFirst)
+                if (attemptProvider != provider) {
+                    Log.i(TAG, "Fallback to ${attemptProvider.displayName} succeeded")
+                }
+                return@withContext result
             } catch (e: Exception) {
-                Log.w(TAG, "Local-first Ollama failed (${e.message}), falling back to $provider")
+                lastError = "${attemptProvider.displayName}: ${e.message}"
+                Log.w(TAG, "${attemptProvider.displayName} failed: ${e.message}")
+
+                // Don't retry on auth errors (bad API key) — only on connection/model errors
+                val msg = e.message ?: ""
+                if (msg.contains("Invalid API Key", ignoreCase = true) ||
+                    msg.contains("invalid_api_key", ignoreCase = true)) {
+                    // Auth error — skip other cloud providers, try local only
+                    continue
+                }
+                // For other errors (connection, model not found, rate limit), try next
+                continue
             }
         }
 
-        when (provider) {
-            LlmProvider.GROQ -> groqCompleteWithFallback(prompt, systemPrompt, resolveGroqModel(modelId), maxOutputTokens)
-            LlmProvider.HUGGINGFACE -> hfComplete(prompt, modelId, maxOutputTokens)
+        throw RuntimeException(
+            "All providers failed. Last error: $lastError\n\n" +
+            "Tips:\n" +
+            "• Make sure Hermes-agent is running on your device\n" +
+            "• Or enter a valid API key for Groq/OpenRouter in Settings"
+        )
+    }
+
+    /**
+     * Try a single provider. Throws if it fails.
+     */
+    private suspend fun tryProvider(
+        provider: LlmProvider,
+        modelId: String,
+        prompt: String,
+        systemPrompt: String,
+        maxOutputTokens: Int,
+        useLocalFirst: Boolean
+    ): String {
+        // Local-first: try Ollama before the cloud provider
+        if (useLocalFirst && provider != LlmProvider.OLLAMA_LOCAL && provider != LlmProvider.HERMES_AGENT) {
+            try {
+                Log.i(TAG, "Local-first: trying Ollama before $provider")
+                return ollamaComplete(prompt, systemPrompt, settings.ollamaModel.ifBlank { "llama3" })
+            } catch (e: Exception) {
+                Log.w(TAG, "Local-first Ollama failed: ${e.message}")
+            }
+        }
+
+        return when (provider) {
+            LlmProvider.HERMES_AGENT -> hermesAgentComplete(prompt, systemPrompt, modelId, maxOutputTokens)
+            LlmProvider.GROQ -> groqComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.OPENROUTER -> openRouterComplete(prompt, systemPrompt, modelId, maxOutputTokens)
+            LlmProvider.HUGGINGFACE -> hfComplete(prompt, modelId, maxOutputTokens)
             LlmProvider.OLLAMA_LOCAL -> ollamaComplete(prompt, systemPrompt, modelId)
             LlmProvider.OPENAI_COMPAT_LOCAL -> localOpenAiComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.CUSTOM -> customComplete(prompt, systemPrompt, modelId, maxOutputTokens)
-            LlmProvider.HERMES_AGENT -> hermesAgentComplete(prompt, systemPrompt, modelId, maxOutputTokens)
         }
     }
 
@@ -90,20 +141,38 @@ class LlmClient(private val settings: UserSettings) {
     // Provider implementations
     // ─────────────────────────────────────────────────
 
+    /**
+     * Hermes-agent: runs locally on the device at localhost:8642
+     * Built-in API key: "change-me-local-dev"
+     * No user configuration needed — works out of the box.
+     */
+    private suspend fun hermesAgentComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
+        val baseUrl = settings.resolveBaseUrl(LlmProvider.HERMES_AGENT)
+        val resolvedModel = if (model.isNotBlank()) model else "hermes-agent"
+        val apiKey = "change-me-local-dev"
+
+        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
+        val req = Request.Builder()
+            .url("$baseUrl/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
+            .post(body).build()
+
+        return executeAndExtractContentWithRetry(req, "Hermes Agent", resolvedModel)
+    }
+
     private fun resolveGroqModel(configured: String): String = when {
         configured.isBlank() -> GROQ_DEFAULT_MODEL
-        configured == "openai/gpt-oss-20b" -> GROQ_DEFAULT_MODEL // old broken default
-        configured in VALID_GROQ_MODELS -> configured
+        configured in listOf("openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama3-70b-8192") -> GROQ_DEFAULT_MODEL
         else -> configured
     }
 
-    private suspend fun groqCompleteWithFallback(
-        prompt: String, system: String, model: String, maxOutputTokens: Int
-    ): String {
+    private suspend fun groqComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
+        val resolvedModel = resolveGroqModel(model)
         val modelsToTry = buildList {
-            add(model)
-            addAll(GROQ_FALLBACK_MODELS.filter { it != model })
+            add(resolvedModel)
+            addAll(GROQ_FALLBACK_MODELS.filter { it != resolvedModel })
         }
+
         var lastError: String? = null
         for (m in modelsToTry) {
             try {
@@ -115,10 +184,10 @@ class LlmClient(private val settings: UserSettings) {
                 return executeAndExtractContentWithRetry(req, "Groq", m)
             } catch (e: Exception) {
                 val msg = e.message ?: ""
-                if (msg.contains("model_not_found", true) || msg.contains("does not exist", true) || msg.contains("404", true)) {
+                if (msg.contains("model_not_found", true) || msg.contains("does not exist", true)) {
                     lastError = msg; continue
                 }
-                throw e
+                throw e // auth errors, rate limits propagate immediately
             }
         }
         throw RuntimeException("All Groq models failed. Last error: $lastError")
@@ -180,20 +249,13 @@ class LlmClient(private val settings: UserSettings) {
         } catch (_: Exception) { configured.ifBlank { "local-model" } }
     }
 
-    /**
-     * Custom provider: ANY OpenAI-compatible URL + ANY model + ANY key.
-     */
     private suspend fun customComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
         val baseUrl = settings.resolveBaseUrl(LlmProvider.CUSTOM)
         val apiKey = settings.resolveApiKey(LlmProvider.CUSTOM)
         val resolvedModel = if (model.isNotBlank()) model else settings.customProviderModel
 
-        if (baseUrl.isBlank()) {
-            throw RuntimeException("Custom provider URL is blank. Go to Settings → Custom Provider URL.")
-        }
-        if (resolvedModel.isBlank()) {
-            throw RuntimeException("Custom provider model is blank. Go to Settings → Custom Model Name.")
-        }
+        if (baseUrl.isBlank()) throw RuntimeException("Custom provider URL is blank. Go to Settings.")
+        if (resolvedModel.isBlank()) throw RuntimeException("Custom provider model is blank. Go to Settings.")
 
         val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
         val reqBuilder = Request.Builder()
@@ -203,28 +265,6 @@ class LlmClient(private val settings: UserSettings) {
 
         return executeAndExtractContentWithRetry(reqBuilder.build(), "Custom", resolvedModel)
     }
-
-    /**
-     * Hermes-agent: OpenAI-compatible API from NousResearch
-     * Default URL: http://localhost:8642/v1
-     * Default model: "hermes-agent"
-     * Default API key: "change-me-local-dev" (built-in, no user config needed)
-     */
-    private suspend fun hermesAgentComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
-        val baseUrl = settings.resolveBaseUrl(LlmProvider.HERMES_AGENT)
-        val resolvedModel = if (model.isNotBlank()) model else "hermes-agent"
-        val apiKey = "change-me-local-dev"
-
-        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
-        val req = Request.Builder()
-            .url("$baseUrl/chat/completions")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .post(body).build()
-
-        return executeAndExtractContentWithRetry(req, "Hermes Agent", resolvedModel)
-    }
-
-    // ── Ollama ───────────────────────────────────────
 
     private suspend fun ollamaComplete(prompt: String, system: String, model: String): String {
         val resolvedModel = model.ifBlank { settings.ollamaModel.ifBlank { "llama3" } }
@@ -240,27 +280,22 @@ class LlmClient(private val settings: UserSettings) {
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
             })
             put("stream", false)
-            put("options", JSONObject().apply {
-                put("num_predict", 2048); put("temperature", 0.2)
-            })
+            put("options", JSONObject().apply { put("num_predict", 2048); put("temperature", 0.2) })
         }.toString().toRequestBody(jsonMedia)
         val req = Request.Builder()
             .url("${LlmProvider.OLLAMA_LOCAL.baseUrl}/chat")
             .post(body).build()
         return http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string()?.trim().orEmpty()
-            if (!resp.isSuccessful) throw RuntimeException("Ollama /api/chat HTTP ${resp.code}: $raw".take(300))
+            if (!resp.isSuccessful) throw RuntimeException("Ollama HTTP ${resp.code}: $raw".take(300))
             if (raw.isBlank()) throw RuntimeException("Ollama returned empty response")
             try {
                 val json = JSONObject(raw)
                 val content = json.optJSONObject("message")?.optString("content")?.trim().orEmpty()
                 if (content.isNotBlank()) return@use content
-                val alt = json.optString("response").ifBlank {
-                    throw RuntimeException("Ollama /api/chat returned no content. Raw: ${raw.take(300)}")
-                }
-                alt
+                json.optString("response").ifBlank { throw RuntimeException("Ollama no content. Raw: ${raw.take(200)}") }
             } catch (e: RuntimeException) { throw e }
-            catch (e: Exception) { throw RuntimeException("Ollama invalid JSON: ${raw.take(300)}", e) }
+            catch (e: Exception) { throw RuntimeException("Ollama invalid JSON: ${raw.take(200)}", e) }
         }
     }
 
@@ -273,11 +308,9 @@ class LlmClient(private val settings: UserSettings) {
             .post(body).build()
         return http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string()?.trim().orEmpty()
-            if (!resp.isSuccessful) throw RuntimeException("Ollama /api/generate HTTP ${resp.code}: $raw".take(300))
+            if (!resp.isSuccessful) throw RuntimeException("Ollama HTTP ${resp.code}: $raw".take(300))
             if (raw.isBlank()) throw RuntimeException("Ollama returned empty response")
-            JSONObject(raw).optString("response").ifBlank {
-                throw RuntimeException("Ollama /api/generate returned no content. Raw: ${raw.take(300)}")
-            }
+            JSONObject(raw).optString("response").ifBlank { throw RuntimeException("Ollama no content. Raw: ${raw.take(200)}") }
         }
     }
 
@@ -292,54 +325,68 @@ class LlmClient(private val settings: UserSettings) {
                 put(JSONObject().apply { put("role", "system"); put("content", system) })
                 put(JSONObject().apply { put("role", "user"); put("content", prompt) })
             })
-            put("max_tokens", maxOutputTokens.coerceIn(512, 3000))
+            put("max_tokens", maxOutputTokens.coerceIn(512, 4096))
             put("temperature", 0.2)
         }.toString()
 
     private suspend fun executeAndExtractContentWithRetry(
-        req: Request, providerName: String = "Provider", model: String = ""
+        req: Request, providerName: String, model: String
     ): String {
         var lastError = "Unknown LLM error"
-        repeat(8) { attempt ->
+        repeat(5) { attempt ->
             http.newCall(req).execute().use { resp ->
                 val raw = resp.body?.string()?.trim().orEmpty()
                 if (resp.isSuccessful) {
                     if (raw.isBlank()) {
-                        lastError = "HTTP ${resp.code}: $providerName (model=$model) returned empty response"
-                        if (attempt < 7) { delay((1500L * (attempt + 1)).coerceAtMost(8000L)); return@use }
+                        lastError = "$providerName (model=$model) returned empty response"
+                        if (attempt < 4) { delay(1000L * (attempt + 1)); return@use }
                         throw RuntimeException(lastError)
                     }
                     return extractChatContent(raw, providerName, model)
                 }
-                lastError = "HTTP ${resp.code}: $providerName (model=$model) ${raw.ifBlank { "empty" }.take(250)}"
-                if (resp.code == 429 && attempt < 7) {
+                lastError = "$providerName (model=$model) HTTP ${resp.code}: ${raw.ifBlank { "empty" }.take(200)}"
+                // Rate limit → wait and retry
+                if (resp.code == 429 && attempt < 4) {
                     val retryAfter = resp.header("retry-after")?.toDoubleOrNull()
-                    val waitSeconds = (retryAfter ?: 10.0 + attempt * 5.0).coerceIn(2.0, 65.0)
-                    delay((waitSeconds * 1000.0).toLong()); return@use
+                    delay(((retryAfter ?: 5.0) * 1000).toLong()); return@use
                 }
+                // 4xx = client error (bad key, bad model) — don't retry
                 if (resp.code in 400..499) throw RuntimeException(lastError)
-                if (attempt < 7) { delay((1500L * (attempt + 1)).coerceAtMost(8000L)); return@use }
+                // 5xx = server error — retry
+                if (attempt < 4) { delay(1000L * (attempt + 1)); return@use }
                 throw RuntimeException(lastError)
             }
         }
-        @Suppress("UNREACHABLE_CODE")
         throw RuntimeException(lastError)
     }
 
     private fun extractChatContent(raw: String, providerName: String, model: String): String {
         return try {
             val json = JSONObject(raw)
+            // Check for error objects first
             val errorObj = json.optJSONObject("error")
             if (errorObj != null) {
                 val errorMsg = errorObj.optString("message", errorObj.toString().take(200))
                 throw RuntimeException("$providerName API error (model=$model): $errorMsg")
             }
-            val content = json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")?.trim().orEmpty()
+            // Extract content from OpenAI-compatible response
+            val content = json.optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("message")
+                ?.optString("content")
+                ?.trim()
+                .orEmpty()
             if (content.isNotBlank()) return content
+
+            // Build helpful diagnostic
             val keys = buildList { val k = json.keys(); while (k.hasNext()) add(k.next()) }
-            val preview = raw.take(400).replace("\n", " ")
-            throw RuntimeException("$providerName returned JSON without expected content field.\nModel: $model\nKeys: ${keys.joinToString(", ")}\nPreview: $preview")
+            throw RuntimeException(
+                "$providerName returned JSON without content field.\n" +
+                "Model: $model\n" +
+                "Keys: ${keys.joinToString(", ")}\n" +
+                "Preview: ${raw.take(300).replace("\n", " ")}"
+            )
         } catch (e: RuntimeException) { throw e }
-        catch (e: Exception) { throw RuntimeException("$providerName returned non-JSON: ${raw.take(500)}") }
+        catch (e: Exception) { throw RuntimeException("$providerName returned non-JSON: ${raw.take(300)}") }
     }
 }

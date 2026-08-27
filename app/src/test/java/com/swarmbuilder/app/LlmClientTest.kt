@@ -1,6 +1,5 @@
 package com.swarmbuilder.app
 
-import com.swarmbuilder.app.models.AppSpec
 import com.swarmbuilder.app.models.LlmProvider
 import com.swarmbuilder.app.models.SourceFile
 import com.swarmbuilder.app.models.UserSettings
@@ -18,15 +17,10 @@ class LlmClientTest {
             val model = LlmClient.defaultModelFor(provider, settings)
             // CUSTOM provider returns empty string by default (user must fill it in)
             if (provider != LlmProvider.CUSTOM) {
-                assertNotNull(model)
+                assertNotNull("Model for $provider should not be null", model)
                 assert(model.isNotBlank()) { "Model for $provider should not be blank" }
             }
         }
-    }
-
-    @Test
-    fun `defaultModelFor GROQ returns current working model`() {
-        assertEquals("openai/gpt-oss-120b", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
     }
 
     @Test
@@ -35,13 +29,15 @@ class LlmClientTest {
     }
 
     @Test
+    fun `defaultModelFor GROQ returns current working model`() {
+        assertEquals("openai/gpt-oss-120b", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
+    }
+
+    @Test
     fun `defaultModelFor OLLAMA_LOCAL returns configured model`() {
         assertEquals(
             "llama3",
-            LlmClient.defaultModelFor(
-                LlmProvider.OLLAMA_LOCAL,
-                UserSettings(ollamaModel = "llama3")
-            )
+            LlmClient.defaultModelFor(LlmProvider.OLLAMA_LOCAL, UserSettings(ollamaModel = "llama3"))
         )
     }
 
@@ -74,8 +70,15 @@ class LlmClientTest {
     }
 
     @Test
-    fun `UserSettings with blank keys still constructs`() {
+    fun `LlmClient constructs with blank settings`() {
         val settings = UserSettings()
+        val client = LlmClient(settings)
+        assertNotNull(client)
+    }
+
+    @Test
+    fun `LlmClient constructs with Groq key set`() {
+        val settings = UserSettings(groqApiKey = "gsk_test123")
         val client = LlmClient(settings)
         assertNotNull(client)
     }

@@ -6,9 +6,7 @@ data class SwarmAgent(
     val role: AgentRole,
     val provider: LlmProvider,
     val modelId: String,
-    var status: AgentStatus = AgentStatus.IDLE,
-    val jobDescription: String = "",
-    val systemPrompt: String = ""
+    var status: AgentStatus = AgentStatus.IDLE
 )
 
 enum class AgentRole(val description: String) {
@@ -29,6 +27,11 @@ data class AgentConfig(
     val systemPrompt: String = ""
 )
 
+/**
+ * All LLM providers the app can talk to.
+ * HERMES_AGENT is first because it works out-of-the-box with the local
+ * Hermes-agent app — no API key needed.
+ */
 enum class LlmProvider(val displayName: String, val baseUrl: String) {
     HERMES_AGENT("Hermes Agent (local)", "http://localhost:8642/v1"),
     GROQ("Groq", "https://api.groq.com/openai/v1"),
@@ -40,7 +43,11 @@ enum class LlmProvider(val displayName: String, val baseUrl: String) {
 
     val supportsSystemPrompt: Boolean get() = this != HUGGINGFACE
 
-    /** HERMES_AGENT has a built-in key, Ollama/local don't need keys */
+    /**
+     * HERMES_AGENT has a built-in key ("change-me-local-dev").
+     * Ollama and local endpoints don't need keys.
+     * Groq/HF/OpenRouter/Custom need user-supplied keys.
+     */
     val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM
 }
 
@@ -72,44 +79,58 @@ data class SwarmLog(
 
 enum class LogLevel { INFO, SUCCESS, WARNING, ERROR }
 
+/**
+ * Full app settings.
+ *
+ * KEY DESIGN: resolveApiKey() and isProviderAvailable() drive automatic
+ * fallback. If the user's saved provider has no valid key, the app
+ * automatically falls back to HERMES_AGENT (which always works if the
+ * local Hermes-agent app is running).
+ */
 data class UserSettings(
-    // ─ Global API keys ─────────────────────────────
+    // ── Global API keys (user enters these in Settings) ──
     val groqApiKey: String = "",
     val huggingFaceToken: String = "",
     val openRouterApiKey: String = "",
 
-    // ─ GitHub ──────────────────────────────────────
+    // ── GitHub ─────────────────────────────────────────
     val githubToken: String = "",
     val githubUsername: String = "",
     val githubRepoName: String = "",
 
-    // ── Default provider (fallback) ─────────────────
+    // ── Default provider (fallback when others fail) ──
     val preferredProvider: LlmProvider = LlmProvider.HERMES_AGENT,
 
-    // ── Local / Ollama ──────────────────────────────
+    // ── Local / Ollama ─────────────────────────────────
     val useLocalOllama: Boolean = false,
     val ollamaModel: String = "llama3",
     val localOpenAiBaseUrl: String = "http://127.0.0.1:8081/v1",
     val localOpenAiModel: String = "",
 
-    // ── Custom provider ────────────────────────────
+    // ── Custom provider ────────────────────────────────
     val customProviderUrl: String = "",
     val customProviderModel: String = "",
     val customProviderKey: String = "",
 
-    // ── v4: Local-first routing ─────────────────────
+    // ── v4: Local-first routing ────────────────────────
     val localFirst: Boolean = false,
 
-    // ── v4: Per-agent AI overrides ─────────────────
+    // ── v4: Per-agent AI overrides ─────────────────────
     val architectConfig: AgentConfig = AgentConfig(),
     val coderConfig: AgentConfig = AgentConfig(),
     val reviewerConfig: AgentConfig = AgentConfig()
 ) {
 
+    /**
+     * Resolve the API key for a provider.
+     * HERMES_AGENT always returns its built-in key.
+     * Local providers return empty string (no key needed).
+     * Cloud providers return the user's saved key.
+     */
     fun resolveApiKey(provider: LlmProvider, agentOverride: String = ""): String {
         if (agentOverride.isNotBlank()) return agentOverride
         return when (provider) {
-            LlmProvider.HERMES_AGENT -> "change-me-local-dev"  // Built-in key
+            LlmProvider.HERMES_AGENT -> "change-me-local-dev"
             LlmProvider.GROQ -> groqApiKey
             LlmProvider.HUGGINGFACE -> huggingFaceToken
             LlmProvider.OPENROUTER -> openRouterApiKey
@@ -132,24 +153,40 @@ data class UserSettings(
         return provider.baseUrl.trimEnd('/')
     }
 
+    /**
+     * Is this provider actually usable RIGHT NOW?
+     * - HERMES_AGENT: always available (no key needed)
+     * - Ollama/local: always available (no key needed)
+     * - Cloud providers: only if user entered an API key
+     */
     fun isProviderAvailable(provider: LlmProvider): Boolean {
         if (!provider.requiresApiKey) return true
         return resolveApiKey(provider).isNotBlank()
     }
 
+    /**
+     * Get all providers that could work right now.
+     * Used by LlmClient for automatic fallback.
+     */
     fun availableProviders(): List<LlmProvider> =
         LlmProvider.values().filter { isProviderAvailable(it) }
 
-    fun pickFallbackProvider(exclude: LlmProvider): LlmProvider? {
-        val candidates = availableProviders().filter { it != exclude }
-        // Prefer local (free) first, then cloud
-        candidates.firstOrNull { it == LlmProvider.HERMES_AGENT }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.GROQ }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.OPENROUTER }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.HUGGINGFACE }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.CUSTOM }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.OLLAMA_LOCAL }?.let { return it }
-        candidates.firstOrNull { it == LlmProvider.OPENAI_COMPAT_LOCAL }?.let { return it }
-        return null
+    /**
+     * Get the fallback chain for a given provider.
+     * Tries: HERMES_AGENT → other cloud providers with keys → local providers.
+     * This is what makes the app work even if the user's saved provider fails.
+     */
+    fun getFallbackChain(exclude: LlmProvider): List<LlmProvider> {
+        val available = availableProviders().filter { it != exclude }
+        // Order: local first (free), then cloud
+        val ordered = mutableListOf<LlmProvider>()
+        ordered.addAll(available.filter { it == LlmProvider.HERMES_AGENT })
+        ordered.addAll(available.filter { it == LlmProvider.OLLAMA_LOCAL })
+        ordered.addAll(available.filter { it == LlmProvider.OPENAI_COMPAT_LOCAL })
+        ordered.addAll(available.filter { it == LlmProvider.GROQ })
+        ordered.addAll(available.filter { it == LlmProvider.OPENROUTER })
+        ordered.addAll(available.filter { it == LlmProvider.HUGGINGFACE })
+        ordered.addAll(available.filter { it == LlmProvider.CUSTOM })
+        return ordered
     }
 }

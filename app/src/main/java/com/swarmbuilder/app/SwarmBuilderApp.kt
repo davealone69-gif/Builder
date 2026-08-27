@@ -9,6 +9,14 @@ import com.swarmbuilder.app.models.AgentConfig
 import com.swarmbuilder.app.models.LlmProvider
 import com.swarmbuilder.app.models.UserSettings
 
+/**
+ * Application class. Manages encrypted settings persistence.
+ *
+ * KEY FIX: When loading settings, if the saved provider has no valid API key,
+ * we automatically fall back to HERMES_AGENT which works out-of-the-box.
+ * This means users who previously saved Groq (with an invalid key) will
+ * automatically switch to the working local provider.
+ */
 class SwarmBuilderApp : Application() {
 
     lateinit var userSettings: UserSettings
@@ -76,10 +84,34 @@ class SwarmBuilderApp : Application() {
         legacyEdit.apply()
     }
 
+    /**
+     * Load settings from encrypted prefs.
+     *
+     * CRITICAL: If the saved provider requires an API key but none is set,
+     * fall back to HERMES_AGENT. This fixes the case where a user saved
+     * Groq as their provider but never entered a valid key.
+     */
     fun loadSettings(): UserSettings {
-        // Default to HERMES_AGENT for new installs — works out-of-the-box
         val providerName = securePrefs.getString(PREF_PROVIDER, LlmProvider.HERMES_AGENT.name) ?: LlmProvider.HERMES_AGENT.name
-        val provider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.HERMES_AGENT)
+        val savedProvider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.HERMES_AGENT)
+
+        val groqKey = securePrefs.getString(PREF_GROQ_KEY, "") ?: ""
+        val hfToken = securePrefs.getString(PREF_HF_TOKEN, "") ?: ""
+        val orKey = securePrefs.getString(PREF_OR_KEY, "") ?: ""
+        val customKey = securePrefs.getString(PREF_CUSTOM_KEY, "") ?: ""
+
+        // Smart fallback: if saved provider needs a key but has none, use HERMES_AGENT
+        val effectiveProvider = when {
+            !savedProvider.requiresApiKey -> savedProvider  // HERMES_AGENT, Ollama, local
+            savedProvider == LlmProvider.GROQ && groqKey.isNotBlank() -> savedProvider
+            savedProvider == LlmProvider.OPENROUTER && orKey.isNotBlank() -> savedProvider
+            savedProvider == LlmProvider.HUGGINGFACE && hfToken.isNotBlank() -> savedProvider
+            savedProvider == LlmProvider.CUSTOM && customKey.isNotBlank() -> savedProvider
+            else -> {
+                // Saved provider has no valid key — fall back to HERMES_AGENT
+                LlmProvider.HERMES_AGENT
+            }
+        }
 
         fun loadAgentConfig(pPref: String, mPref: String, uPref: String, kPref: String, sPref: String): AgentConfig {
             val pName = securePrefs.getString(pPref, "") ?: ""
@@ -94,20 +126,20 @@ class SwarmBuilderApp : Application() {
         }
 
         return UserSettings(
-            groqApiKey = securePrefs.getString(PREF_GROQ_KEY, "") ?: "",
-            huggingFaceToken = securePrefs.getString(PREF_HF_TOKEN, "") ?: "",
-            openRouterApiKey = securePrefs.getString(PREF_OR_KEY, "") ?: "",
+            groqApiKey = groqKey,
+            huggingFaceToken = hfToken,
+            openRouterApiKey = orKey,
             githubToken = securePrefs.getString(PREF_GH_TOKEN, "") ?: "",
             githubUsername = securePrefs.getString(PREF_GH_USER, "") ?: "",
             githubRepoName = securePrefs.getString(PREF_GH_REPO, "") ?: "",
-            preferredProvider = provider,
+            preferredProvider = effectiveProvider,
             useLocalOllama = securePrefs.getBoolean(PREF_OLLAMA, false),
             ollamaModel = securePrefs.getString(PREF_OLLAMA_MODEL, "llama3") ?: "llama3",
             localOpenAiBaseUrl = securePrefs.getString(PREF_LOCAL_OPENAI_URL, "http://127.0.0.1:8081/v1") ?: "http://127.0.0.1:8081/v1",
             localOpenAiModel = securePrefs.getString(PREF_LOCAL_OPENAI_MODEL, "") ?: "",
             customProviderUrl = securePrefs.getString(PREF_CUSTOM_URL, "") ?: "",
             customProviderModel = securePrefs.getString(PREF_CUSTOM_MODEL, "") ?: "",
-            customProviderKey = securePrefs.getString(PREF_CUSTOM_KEY, "") ?: "",
+            customProviderKey = customKey,
             localFirst = securePrefs.getBoolean(PREF_LOCAL_FIRST, false),
             architectConfig = loadAgentConfig(PREF_ARCH_PROVIDER, PREF_ARCH_MODEL, PREF_ARCH_URL, PREF_ARCH_KEY, PREF_ARCH_PROMPT),
             coderConfig = loadAgentConfig(PREF_CODER_PROVIDER, PREF_CODER_MODEL, PREF_CODER_URL, PREF_CODER_KEY, PREF_CODER_PROMPT),

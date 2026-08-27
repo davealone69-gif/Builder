@@ -43,7 +43,7 @@ class ModelsTest {
     }
 
     @Test
-    fun `UserSettings defaults use HERMES_AGENT provider and local-first off`() {
+    fun `UserSettings defaults use HERMES_AGENT provider`() {
         val settings = UserSettings()
         assertEquals(LlmProvider.HERMES_AGENT, settings.preferredProvider)
         assertFalse(settings.useLocalOllama)
@@ -52,12 +52,56 @@ class ModelsTest {
     }
 
     @Test
-    fun `AgentConfig has blank defaults`() {
+    fun `AgentConfig defaults are blank`() {
         val config = com.swarmbuilder.app.models.AgentConfig()
         assertEquals("", config.modelId)
         assertEquals("", config.baseUrl)
         assertEquals("", config.apiKey)
         assertEquals("", config.systemPrompt)
+    }
+
+    @Test
+    fun `HERMES_AGENT does not require API key`() {
+        assertFalse(LlmProvider.HERMES_AGENT.requiresApiKey)
+    }
+
+    @Test
+    fun `HERMES_AGENT isProviderAvailable returns true even with no keys`() {
+        val settings = UserSettings()
+        assertTrue(settings.isProviderAvailable(LlmProvider.HERMES_AGENT))
+    }
+
+    @Test
+    fun `HERMES_AGENT resolveApiKey returns built-in key`() {
+        val settings = UserSettings()
+        assertEquals("change-me-local-dev", settings.resolveApiKey(LlmProvider.HERMES_AGENT))
+    }
+
+    @Test
+    fun `GROQ requires API key and isProviderAvailable returns false when key is blank`() {
+        assertTrue(LlmProvider.GROQ.requiresApiKey)
+        val settings = UserSettings()
+        assertFalse(settings.isProviderAvailable(LlmProvider.GROQ))
+    }
+
+    @Test
+    fun `GROQ isProviderAvailable returns true when key is set`() {
+        val settings = UserSettings(groqApiKey = "gsk_test123")
+        assertTrue(settings.isProviderAvailable(LlmProvider.GROQ))
+    }
+
+    @Test
+    fun `getFallbackChain returns HERMES_AGENT first`() {
+        val settings = UserSettings()
+        val chain = settings.getFallbackChain(LlmProvider.GROQ)
+        assertTrue(chain.firstOrNull() == LlmProvider.HERMES_AGENT)
+    }
+
+    @Test
+    fun `getFallbackChain excludes the given provider`() {
+        val settings = UserSettings(groqApiKey = "gsk_test123")
+        val chain = settings.getFallbackChain(LlmProvider.GROQ)
+        assertFalse(chain.contains(LlmProvider.GROQ))
     }
 
     @Test
@@ -77,12 +121,12 @@ class ModelsTest {
     }
 
     @Test
-    fun `HERMES_AGENT does not require API key`() {
-        assertFalse(LlmProvider.HERMES_AGENT.requiresApiKey)
+    fun `OLLAMA_LOCAL does not require API key`() {
+        assertFalse(LlmProvider.OLLAMA_LOCAL.requiresApiKey)
     }
 
     @Test
-    fun `HERMES_AGENT isProviderAvailable returns true`() {
-        assertTrue(UserSettings().isProviderAvailable(LlmProvider.HERMES_AGENT))
+    fun `OPENAI_COMPAT_LOCAL does not require API key`() {
+        assertFalse(LlmProvider.OPENAI_COMPAT_LOCAL.requiresApiKey)
     }
 }
