@@ -30,6 +30,11 @@ class LlmClientTest {
     }
 
     @Test
+    fun `defaultModelFor HERMES_AGENT returns hermes-agent`() {
+        assertEquals("hermes-agent", LlmClient.defaultModelFor(LlmProvider.HERMES_AGENT, UserSettings()))
+    }
+
+    @Test
     fun `defaultModelFor OLLAMA_LOCAL returns configured model`() {
         assertEquals(
             "llama3",
@@ -45,14 +50,6 @@ class LlmClientTest {
         assertEquals(
             "local-model",
             LlmClient.defaultModelFor(LlmProvider.OPENAI_COMPAT_LOCAL, UserSettings())
-        )
-    }
-
-    @Test
-    fun `defaultModelFor HERMES_AGENT returns hermes-agent model`() {
-        assertEquals(
-            "hermes-agent",
-            LlmClient.defaultModelFor(LlmProvider.HERMES_AGENT, UserSettings())
         )
     }
 

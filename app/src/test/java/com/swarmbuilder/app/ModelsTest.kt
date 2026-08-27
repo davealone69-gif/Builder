@@ -36,8 +36,8 @@ class ModelsTest {
             id = "a1",
             name = "Coder",
             role = AgentRole.CODER,
-            provider = LlmProvider.GROQ,
-            modelId = "llama3-70b-8192"
+            provider = LlmProvider.HERMES_AGENT,
+            modelId = "hermes-agent"
         )
         assertEquals(AgentStatus.IDLE, agent.status)
     }
@@ -53,7 +53,7 @@ class ModelsTest {
 
     @Test
     fun `AgentConfig has blank defaults`() {
-        val config = AgentConfig()
+        val config = com.swarmbuilder.app.models.AgentConfig()
         assertEquals("", config.modelId)
         assertEquals("", config.baseUrl)
         assertEquals("", config.apiKey)
@@ -74,5 +74,15 @@ class ModelsTest {
         LlmProvider.values().forEach { provider ->
             assertTrue("${provider.name} baseUrl is blank", provider.baseUrl.isNotBlank())
         }
+    }
+
+    @Test
+    fun `HERMES_AGENT does not require API key`() {
+        assertFalse(LlmProvider.HERMES_AGENT.requiresApiKey)
+    }
+
+    @Test
+    fun `HERMES_AGENT isProviderAvailable returns true`() {
+        assertTrue(UserSettings().isProviderAvailable(LlmProvider.HERMES_AGENT))
     }
 }

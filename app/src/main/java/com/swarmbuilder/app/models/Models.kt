@@ -1,10 +1,5 @@
 package com.swarmbuilder.app.models
 
-/**
- * Represents a single agent in the AI swarm.
- *
- * v4: Added systemPrompt to allow custom AI instructions per agent.
- */
 data class SwarmAgent(
     val id: String,
     val name: String,
@@ -12,7 +7,7 @@ data class SwarmAgent(
     val provider: LlmProvider,
     val modelId: String,
     var status: AgentStatus = AgentStatus.IDLE,
-    val jobDescription: String = role.description,
+    val jobDescription: String = "",
     val systemPrompt: String = ""
 )
 
@@ -26,17 +21,8 @@ enum class AgentRole(val description: String) {
 
 enum class AgentStatus { IDLE, RUNNING, DONE, ERROR }
 
-/**
- * v4: Per-agent AI config.
- * Each agent (Architect / Coder / Reviewer) has its OWN:
- * - Provider (Groq, OpenRouter, Ollama, Custom, etc.)
- * - Model name (blank = use provider default)
- * - Base URL (blank = use provider default)
- * - API key (blank = use global key)
- * - System prompt (blank = use default instructions)
- */
 data class AgentConfig(
-    val provider: LlmProvider = LlmProvider.GROQ,
+    val provider: LlmProvider = LlmProvider.HERMES_AGENT,
     val modelId: String = "",
     val baseUrl: String = "",
     val apiKey: String = "",
@@ -44,16 +30,18 @@ data class AgentConfig(
 )
 
 enum class LlmProvider(val displayName: String, val baseUrl: String) {
+    HERMES_AGENT("Hermes Agent (local)", "http://localhost:8642/v1"),
     GROQ("Groq", "https://api.groq.com/openai/v1"),
-    HUGGINGFACE("Hugging Face", "https://api-inference.huggingface.co/models"),
     OPENROUTER("OpenRouter (free tier)", "https://openrouter.ai/api/v1"),
+    HUGGINGFACE("Hugging Face", "https://api-inference.huggingface.co/models"),
     OLLAMA_LOCAL("Ollama (local)", "http://localhost:11434/api"),
     OPENAI_COMPAT_LOCAL("Local OpenAI-Compatible", "http://127.0.0.1:8081/v1"),
-    CUSTOM("Custom (your own URL)", "https://api.openai.com/v1"),
-    HERMES_AGENT("Hermes Agent (local)", "http://localhost:8642/v1");
+    CUSTOM("Custom (your own URL)", "https://api.openai.com/v1");
 
     val supportsSystemPrompt: Boolean get() = this != HUGGINGFACE
-    val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM || this == HERMES_AGENT
+
+    /** HERMES_AGENT has a built-in key, Ollama/local don't need keys */
+    val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM
 }
 
 data class AppSpec(
@@ -84,17 +72,8 @@ data class SwarmLog(
 
 enum class LogLevel { INFO, SUCCESS, WARNING, ERROR }
 
-/**
- * v4: Full settings with:
- * - Global API keys
- * - GitHub settings
- * - Preferred provider (fallback)
- * - Per-agent AI overrides (Architect / Coder / Reviewer)
- * - Custom provider (ANY URL + model + key)
- * - Local-first toggle (try Ollama before cloud)
- */
 data class UserSettings(
-    // ── Global API keys ─────────────────────────────
+    // ─ Global API keys ─────────────────────────────
     val groqApiKey: String = "",
     val huggingFaceToken: String = "",
     val openRouterApiKey: String = "",
@@ -118,19 +97,19 @@ data class UserSettings(
     val customProviderModel: String = "",
     val customProviderKey: String = "",
 
-    // ── v4 NEW: Local-first routing ─────────────────
+    // ── v4: Local-first routing ─────────────────────
     val localFirst: Boolean = false,
 
-    // ── v4 NEW: Per-agent AI overrides ──────────────
+    // ── v4: Per-agent AI overrides ─────────────────
     val architectConfig: AgentConfig = AgentConfig(),
     val coderConfig: AgentConfig = AgentConfig(),
     val reviewerConfig: AgentConfig = AgentConfig()
 ) {
 
-    /** Resolve API key: agent override > custom > global. */
     fun resolveApiKey(provider: LlmProvider, agentOverride: String = ""): String {
         if (agentOverride.isNotBlank()) return agentOverride
         return when (provider) {
+            LlmProvider.HERMES_AGENT -> "change-me-local-dev"  // Built-in key
             LlmProvider.GROQ -> groqApiKey
             LlmProvider.HUGGINGFACE -> huggingFaceToken
             LlmProvider.OPENROUTER -> openRouterApiKey
@@ -139,7 +118,6 @@ data class UserSettings(
         }
     }
 
-    /** Resolve base URL: agent override > custom > provider default. */
     fun resolveBaseUrl(provider: LlmProvider, agentOverride: String = ""): String {
         if (agentOverride.isNotBlank()) return agentOverride.trimEnd('/')
         if (provider == LlmProvider.CUSTOM) {
@@ -154,7 +132,6 @@ data class UserSettings(
         return provider.baseUrl.trimEnd('/')
     }
 
-    /** Check if a provider is usable. */
     fun isProviderAvailable(provider: LlmProvider): Boolean {
         if (!provider.requiresApiKey) return true
         return resolveApiKey(provider).isNotBlank()
@@ -165,6 +142,8 @@ data class UserSettings(
 
     fun pickFallbackProvider(exclude: LlmProvider): LlmProvider? {
         val candidates = availableProviders().filter { it != exclude }
+        // Prefer local (free) first, then cloud
+        candidates.firstOrNull { it == LlmProvider.HERMES_AGENT }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.GROQ }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.OPENROUTER }?.let { return it }
         candidates.firstOrNull { it == LlmProvider.HUGGINGFACE }?.let { return it }

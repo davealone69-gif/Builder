@@ -60,7 +60,7 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Run unit tests
-        run: echo "Skipping tests for now"
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Build APKs
         run: ./gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace

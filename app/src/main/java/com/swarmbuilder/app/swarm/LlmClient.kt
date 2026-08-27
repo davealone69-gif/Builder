@@ -205,14 +205,15 @@ class LlmClient(private val settings: UserSettings) {
     }
 
     /**
-     * Hermes-agent: OpenAI-compatible API at http://localhost:8642/v1
+     * Hermes-agent: OpenAI-compatible API from NousResearch
+     * Default URL: http://localhost:8642/v1
      * Default model: "hermes-agent"
-     * Default API key: "change-me-local-dev"
+     * Default API key: "change-me-local-dev" (built-in, no user config needed)
      */
     private suspend fun hermesAgentComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
-        val baseUrl = "http://localhost:8642/v1"
+        val baseUrl = settings.resolveBaseUrl(LlmProvider.HERMES_AGENT)
         val resolvedModel = if (model.isNotBlank()) model else "hermes-agent"
-        val apiKey = "change-me-local-dev" // Default Hermes-agent key
+        val apiKey = "change-me-local-dev"
 
         val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
         val req = Request.Builder()

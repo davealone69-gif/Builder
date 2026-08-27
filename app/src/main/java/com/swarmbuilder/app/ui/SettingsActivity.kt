@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import com.swarmbuilder.app.R
 import com.swarmbuilder.app.SwarmBuilderApp
@@ -30,26 +32,20 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings(s: UserSettings) {
-        // Global keys
         binding.etGroqKey.setText(s.groqApiKey)
         binding.etHfToken.setText(s.huggingFaceToken)
         binding.etOrKey.setText(s.openRouterApiKey)
-        // GitHub
         binding.etGhToken.setText(s.githubToken)
         binding.etGhUser.setText(s.githubUsername)
-        // Local
         binding.switchOllama.isChecked = s.useLocalOllama
         binding.etOllamaModel.setText(s.ollamaModel)
         binding.etLocalOpenAiUrl.setText(s.localOpenAiBaseUrl)
         binding.etLocalOpenAiModel.setText(s.localOpenAiModel)
-        // Custom provider
         binding.etCustomUrl.setText(s.customProviderUrl)
         binding.etCustomModel.setText(s.customProviderModel)
         binding.etCustomKey.setText(s.customProviderKey)
-        // Local-first toggle
         binding.switchLocalFirst.isChecked = s.localFirst
 
-        // Provider spinners
         val providers = LlmProvider.values().map { it.displayName }
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, providers)
             .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
@@ -59,13 +55,11 @@ class SettingsActivity : AppCompatActivity() {
         binding.spCoderProvider.adapter = adapter
         binding.spReviewerProvider.adapter = adapter
 
-        // Set selections
         binding.spinnerProvider.setSelection(s.preferredProvider.ordinal)
         binding.spArchProvider.setSelection(s.architectConfig.provider.ordinal)
         binding.spCoderProvider.setSelection(s.coderConfig.provider.ordinal)
         binding.spReviewerProvider.setSelection(s.reviewerConfig.provider.ordinal)
 
-        // Per-agent fields
         binding.etArchModel.setText(s.architectConfig.modelId)
         binding.etArchUrl.setText(s.architectConfig.baseUrl)
         binding.etArchKey.setText(s.architectConfig.apiKey)
@@ -81,7 +75,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.etReviewerKey.setText(s.reviewerConfig.apiKey)
         binding.etReviewerPrompt.setText(s.reviewerConfig.systemPrompt)
 
-        // Hide custom provider fields unless "Custom" is selected
         updateCustomFieldsVisibility(s.preferredProvider.ordinal)
         binding.spinnerProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -92,28 +85,33 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateCustomFieldsVisibility(selectedIdx: Int) {
-        val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
-        val show = provider == LlmProvider.CUSTOM
-        val visible = if (show) android.view.View.VISIBLE else android.view.View.GONE
-        (binding.etCustomUrl.parent?.parent as? android.view.View)?.visibility = visible
-        (binding.etCustomModel.parent?.parent as? android.view.View)?.visibility = visible
-        (binding.etCustomKey.parent?.parent as? android.view.View)?.visibility = visible
+        val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.HERMES_AGENT }
+        val visible = if (provider == LlmProvider.CUSTOM) View.VISIBLE else View.GONE
+        (binding.etCustomUrl.parent?.parent as? View)?.visibility = visible
+        (binding.etCustomModel.parent?.parent as? View)?.visibility = visible
+        (binding.etCustomKey.parent?.parent as? View)?.visibility = visible
+    }
+
+    private fun readAgentConfig(
+        spinner: Spinner,
+        modelField: EditText,
+        urlField: EditText,
+        keyField: EditText,
+        promptField: EditText
+    ): AgentConfig {
+        val provider = LlmProvider.values().getOrElse(spinner.selectedItemPosition) { LlmProvider.HERMES_AGENT }
+        return AgentConfig(
+            provider = provider,
+            modelId = modelField.text.toString().trim(),
+            baseUrl = urlField.text.toString().trim(),
+            apiKey = keyField.text.toString().trim(),
+            systemPrompt = promptField.text.toString().trim()
+        )
     }
 
     private fun saveSettings(app: SwarmBuilderApp) {
-        fun readAgentConfig(spinner: android.widget.Spinner, modelField: android.widget.EditText, urlField: android.widget.EditText, keyField: android.widget.EditText, promptField: android.widget.EditText): AgentConfig {
-            val provider = LlmProvider.values().getOrElse(spinner.selectedItemPosition) { LlmProvider.GROQ }
-            return AgentConfig(
-                provider = provider,
-                modelId = modelField.text.toString().trim(),
-                baseUrl = urlField.text.toString().trim(),
-                apiKey = keyField.text.toString().trim(),
-                systemPrompt = promptField.text.toString().trim()
-            )
-        }
-
         val selectedIdx = binding.spinnerProvider.selectedItemPosition
-        val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
+        val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.HERMES_AGENT }
         val settings = UserSettings(
             groqApiKey = binding.etGroqKey.text.toString().trim(),
             huggingFaceToken = binding.etHfToken.text.toString().trim(),

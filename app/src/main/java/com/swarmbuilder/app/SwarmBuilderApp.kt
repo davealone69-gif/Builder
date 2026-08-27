@@ -57,7 +57,6 @@ class SwarmBuilderApp : Application() {
                 legacyEdit.remove(key)
             }
         }
-        // Also migrate per-agent keys if they exist
         listOf(
             PREF_ARCH_PROVIDER, PREF_ARCH_MODEL, PREF_ARCH_URL, PREF_ARCH_KEY, PREF_ARCH_PROMPT,
             PREF_CODER_PROVIDER, PREF_CODER_MODEL, PREF_CODER_URL, PREF_CODER_KEY, PREF_CODER_PROMPT,
@@ -78,14 +77,15 @@ class SwarmBuilderApp : Application() {
     }
 
     fun loadSettings(): UserSettings {
-        val providerName = securePrefs.getString(PREF_PROVIDER, LlmProvider.OPENROUTER.name) ?: LlmProvider.OPENROUTER.name
-        val provider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.OPENROUTER)
+        // Default to HERMES_AGENT for new installs — works out-of-the-box
+        val providerName = securePrefs.getString(PREF_PROVIDER, LlmProvider.HERMES_AGENT.name) ?: LlmProvider.HERMES_AGENT.name
+        val provider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.HERMES_AGENT)
 
         fun loadAgentConfig(pPref: String, mPref: String, uPref: String, kPref: String, sPref: String): AgentConfig {
             val pName = securePrefs.getString(pPref, "") ?: ""
-            val p = if (pName.isNotBlank()) runCatching { LlmProvider.valueOf(pName) }.getOrDefault(LlmProvider.GROQ) else LlmProvider.GROQ
+            val p = if (pName.isNotBlank()) runCatching { LlmProvider.valueOf(pName) }.getOrDefault(LlmProvider.HERMES_AGENT) else LlmProvider.HERMES_AGENT
             return AgentConfig(
-                provider = if (pName.isNotBlank()) p else LlmProvider.GROQ,
+                provider = if (pName.isNotBlank()) p else LlmProvider.HERMES_AGENT,
                 modelId = securePrefs.getString(mPref, "") ?: "",
                 baseUrl = securePrefs.getString(uPref, "") ?: "",
                 apiKey = securePrefs.getString(kPref, "") ?: "",
@@ -132,7 +132,6 @@ class SwarmBuilderApp : Application() {
             .putString(PREF_CUSTOM_MODEL, s.customProviderModel)
             .putString(PREF_CUSTOM_KEY, s.customProviderKey)
             .putBoolean(PREF_LOCAL_FIRST, s.localFirst)
-            // Per-agent
             .putString(PREF_ARCH_PROVIDER, s.architectConfig.provider.name)
             .putString(PREF_ARCH_MODEL, s.architectConfig.modelId)
             .putString(PREF_ARCH_URL, s.architectConfig.baseUrl)
@@ -171,7 +170,6 @@ class SwarmBuilderApp : Application() {
         const val PREF_CUSTOM_MODEL = "custom_provider_model"
         const val PREF_CUSTOM_KEY = "custom_provider_key"
         const val PREF_LOCAL_FIRST = "local_first"
-        // Per-agent
         const val PREF_ARCH_PROVIDER = "arch_provider"
         const val PREF_ARCH_MODEL = "arch_model"
         const val PREF_ARCH_URL = "arch_url"
