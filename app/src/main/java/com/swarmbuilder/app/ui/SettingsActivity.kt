@@ -34,6 +34,9 @@ class SettingsActivity : AppCompatActivity() {
         binding.etOllamaModel.setText(s.ollamaModel)
         binding.etLocalOpenAiUrl.setText(s.localOpenAiBaseUrl)
         binding.etLocalOpenAiModel.setText(s.localOpenAiModel)
+        binding.etCustomUrl.setText(s.customProviderUrl)
+        binding.etCustomModel.setText(s.customProviderModel)
+        binding.etCustomKey.setText(s.customProviderKey)
 
         val providers = LlmProvider.values().map { it.displayName }
         val idx = LlmProvider.values().indexOfFirst { it == s.preferredProvider }
@@ -43,6 +46,25 @@ class SettingsActivity : AppCompatActivity() {
             providers
         ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         if (idx >= 0) binding.spinnerProvider.setSelection(idx)
+        updateCustomFieldsVisibility(idx)
+
+        // Show/hide custom fields when provider changes
+        binding.spinnerProvider.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                updateCustomFieldsVisibility(position)
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        })
+    }
+
+    private fun updateCustomFieldsVisibility(selectedIdx: Int) {
+        val selectedProvider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
+        val showCustom = selectedProvider == LlmProvider.CUSTOM
+        binding.etCustomUrl.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
+        // Hide the custom model and key rows too — find them by walking up from the EditText
+        binding.etCustomModel.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
+        binding.etCustomKey.parent?.parent?.visibility = if (showCustom) android.view.View.VISIBLE else android.view.View.GONE
+        // Also hide the labels above them — simpler: just hide the whole group
     }
 
     private fun saveSettings(app: SwarmBuilderApp) {
@@ -59,7 +81,10 @@ class SettingsActivity : AppCompatActivity() {
             ollamaModel = binding.etOllamaModel.text.toString().trim().ifBlank { "llama3" },
             localOpenAiBaseUrl = binding.etLocalOpenAiUrl.text.toString().trim()
                 .ifBlank { "http://127.0.0.1:8081/v1" },
-            localOpenAiModel = binding.etLocalOpenAiModel.text.toString().trim()
+            localOpenAiModel = binding.etLocalOpenAiModel.text.toString().trim(),
+            customProviderUrl = binding.etCustomUrl.text.toString().trim(),
+            customProviderModel = binding.etCustomModel.text.toString().trim(),
+            customProviderKey = binding.etCustomKey.text.toString().trim()
         )
         app.saveSettings(settings)
         finish()

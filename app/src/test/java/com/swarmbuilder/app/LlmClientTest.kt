@@ -16,14 +16,17 @@ class LlmClientTest {
         val settings = UserSettings()
         LlmProvider.values().forEach { provider ->
             val model = LlmClient.defaultModelFor(provider, settings)
-            assertNotNull(model)
-            assert(model.isNotBlank()) { "Model for $provider should not be blank" }
+            // CUSTOM provider returns empty string by default (user must fill it in)
+            if (provider != LlmProvider.CUSTOM) {
+                assertNotNull(model)
+                assert(model.isNotBlank()) { "Model for $provider should not be blank" }
+            }
         }
     }
 
     @Test
-    fun `defaultModelFor GROQ returns llama3-70b-8192`() {
-        assertEquals("llama3-70b-8192", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
+    fun `defaultModelFor GROQ returns current working model`() {
+        assertEquals("openai/gpt-oss-120b", LlmClient.defaultModelFor(LlmProvider.GROQ, UserSettings()))
     }
 
     @Test

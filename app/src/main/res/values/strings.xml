@@ -21,5 +21,11 @@
     <string name="hint_local_openai_model">Local model ID from /v1/models</string>
     <string name="label_use_ollama">Use local Ollama instead</string>
     <string name="hint_ollama_model">Ollama model name (e.g. llama3)</string>
+    <string name="label_custom_url">Custom Provider URL</string>
+    <string name="hint_custom_url">e.g. https://api.openai.com/v1 or http://192.168.1.5:11434/v1</string>
+    <string name="label_custom_model">Custom Model Name</string>
+    <string name="hint_custom_model">e.g. gpt-4o-mini, gpt-3.5-turbo, llama3</string>
+    <string name="label_custom_key">Custom API Key</string>
+    <string name="hint_custom_key">API key for your custom provider</string>
     <string name="btn_save">Save Settings</string>
 </resources>

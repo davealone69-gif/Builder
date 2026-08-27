@@ -48,7 +48,8 @@ class SwarmBuilderApp : Application() {
         val keysToMove = listOf(
             PREF_GROQ_KEY, PREF_HF_TOKEN, PREF_OR_KEY, PREF_GH_TOKEN, PREF_GH_USER, PREF_GH_REPO,
             PREF_PROVIDER, PREF_OLLAMA, PREF_OLLAMA_MODEL,
-            PREF_LOCAL_OPENAI_URL, PREF_LOCAL_OPENAI_MODEL
+            PREF_LOCAL_OPENAI_URL, PREF_LOCAL_OPENAI_MODEL,
+            PREF_CUSTOM_URL, PREF_CUSTOM_MODEL, PREF_CUSTOM_KEY
         )
         val secureEdit = securePrefs.edit()
         val legacyEdit = legacy.edit()
@@ -69,8 +70,8 @@ class SwarmBuilderApp : Application() {
     }
 
     fun loadSettings(): UserSettings {
-        val providerName = securePrefs.getString(PREF_PROVIDER, LlmProvider.GROQ.name) ?: LlmProvider.GROQ.name
-        val provider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.GROQ)
+        val providerName = securePrefs.getString(PREF_PROVIDER, LlmProvider.OPENROUTER.name) ?: LlmProvider.OPENROUTER.name
+        val provider = runCatching { LlmProvider.valueOf(providerName) }.getOrDefault(LlmProvider.OPENROUTER)
 
         fun loadAgentConfig(providerPref: String, modelPref: String, urlPref: String, keyPref: String): com.swarmbuilder.app.models.AgentConfig {
             val pName = securePrefs.getString(providerPref, "") ?: ""
@@ -96,6 +97,9 @@ class SwarmBuilderApp : Application() {
             localOpenAiBaseUrl = securePrefs.getString(PREF_LOCAL_OPENAI_URL, "http://127.0.0.1:8081/v1")
                 ?: "http://127.0.0.1:8081/v1",
             localOpenAiModel = securePrefs.getString(PREF_LOCAL_OPENAI_MODEL, "") ?: "",
+            customProviderUrl = securePrefs.getString(PREF_CUSTOM_URL, "") ?: "",
+            customProviderModel = securePrefs.getString(PREF_CUSTOM_MODEL, "") ?: "",
+            customProviderKey = securePrefs.getString(PREF_CUSTOM_KEY, "") ?: "",
             architectConfig = loadAgentConfig(PREF_ARCH_PROVIDER, PREF_ARCH_MODEL, PREF_ARCH_URL, PREF_ARCH_KEY),
             coderConfig = loadAgentConfig(PREF_CODER_PROVIDER, PREF_CODER_MODEL, PREF_CODER_URL, PREF_CODER_KEY),
             reviewerConfig = loadAgentConfig(PREF_REVIEWER_PROVIDER, PREF_REVIEWER_MODEL, PREF_REVIEWER_URL, PREF_REVIEWER_KEY)
@@ -115,6 +119,9 @@ class SwarmBuilderApp : Application() {
             .putString(PREF_OLLAMA_MODEL, s.ollamaModel)
             .putString(PREF_LOCAL_OPENAI_URL, s.localOpenAiBaseUrl)
             .putString(PREF_LOCAL_OPENAI_MODEL, s.localOpenAiModel)
+            .putString(PREF_CUSTOM_URL, s.customProviderUrl)
+            .putString(PREF_CUSTOM_MODEL, s.customProviderModel)
+            .putString(PREF_CUSTOM_KEY, s.customProviderKey)
             // Per-agent provider overrides
             .putString(PREF_ARCH_PROVIDER, s.architectConfig.provider.name)
             .putString(PREF_ARCH_MODEL, s.architectConfig.modelId)
@@ -147,6 +154,10 @@ class SwarmBuilderApp : Application() {
         const val PREF_OLLAMA_MODEL = "ollama_model"
         const val PREF_LOCAL_OPENAI_URL = "local_openai_base_url"
         const val PREF_LOCAL_OPENAI_MODEL = "local_openai_model"
+        // Custom provider (ANY URL + model + key)
+        const val PREF_CUSTOM_URL = "custom_provider_url"
+        const val PREF_CUSTOM_MODEL = "custom_provider_model"
+        const val PREF_CUSTOM_KEY = "custom_provider_key"
         // Per-agent provider overrides
         const val PREF_ARCH_PROVIDER = "arch_provider"
         const val PREF_ARCH_MODEL = "arch_model"

@@ -43,9 +43,9 @@ class ModelsTest {
     }
 
     @Test
-    fun `UserSettings defaults use GROQ provider`() {
+    fun `UserSettings defaults use OPENROUTER provider`() {
         val settings = UserSettings()
-        assertEquals(LlmProvider.GROQ, settings.preferredProvider)
+        assertEquals(LlmProvider.OPENROUTER, settings.preferredProvider)
         assertFalse(settings.useLocalOllama)
         assertEquals("llama3", settings.ollamaModel)
     }

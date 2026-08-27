@@ -45,6 +45,7 @@ class LlmClient(private val settings: UserSettings) {
             LlmProvider.OPENROUTER -> openRouterComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.OLLAMA_LOCAL -> ollamaComplete(prompt, systemPrompt, modelId)
             LlmProvider.OPENAI_COMPAT_LOCAL -> localOpenAiComplete(prompt, systemPrompt, modelId, maxOutputTokens)
+            LlmProvider.CUSTOM -> customComplete(prompt, systemPrompt, modelId, maxOutputTokens)
         }
     }
 
@@ -167,6 +168,46 @@ class LlmClient(private val settings: UserSettings) {
             .url("$baseUrl/chat/completions")
             .post(body).build()
         return executeAndExtractContentWithRetry(req, providerName = "Local OpenAI", model = resolvedModel)
+    }
+
+    /**
+     * Custom provider: ANY OpenAI-compatible URL + ANY model + ANY key.
+     * This is what you use for any provider not listed above (e.g. your own
+     * proxy, a different OpenAI-compatible service, etc.)
+     */
+    private suspend fun customComplete(
+        prompt: String,
+        system: String,
+        model: String,
+        maxOutputTokens: Int
+    ): String {
+        val baseUrl = settings.resolveBaseUrl(LlmProvider.CUSTOM)
+        val apiKey = settings.resolveApiKey(LlmProvider.CUSTOM)
+        val resolvedModel = if (model.isNotBlank()) model else settings.customProviderModel
+
+        if (baseUrl.isBlank()) {
+            throw RuntimeException(
+                "Custom provider URL is blank. Go to Settings and enter your provider URL.\n" +
+                "Examples: https://api.openai.com/v1, http://your-pc:11434/v1"
+            )
+        }
+        if (resolvedModel.isBlank()) {
+            throw RuntimeException(
+                "Custom provider model is blank. Go to Settings and enter a model name.\n" +
+                "Examples: gpt-4o-mini, gpt-3.5-turbo, llama3"
+            )
+        }
+
+        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
+        val reqBuilder = Request.Builder()
+            .url("$baseUrl/chat/completions")
+            .post(body)
+
+        if (apiKey.isNotBlank()) {
+            reqBuilder.addHeader("Authorization", "Bearer $apiKey")
+        }
+
+        return executeAndExtractContentWithRetry(reqBuilder.build(), providerName = "Custom", model = resolvedModel)
     }
 
     private fun resolveLocalModel(baseUrl: String, configured: String): String {
@@ -370,37 +411,31 @@ class LlmClient(private val settings: UserSettings) {
     private fun bearerToken(key: String): String = "Bearer $key"
 
     companion object {
-        /** Primary Groq model — the OG that's been available since day 1. */
-        const val GROQ_DEFAULT_MODEL = "llama3-70b-8192"
+        /** Current working Groq models (as of August 2026). */
+        const val GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b"
 
         /** Fallback models tried in order if the primary fails with 404/model_not_found. */
         val GROQ_FALLBACK_MODELS = listOf(
-            "llama3-8b-8192",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it",
-            "llama-3.1-8b-instant"
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.6-27b"
         )
 
         /** All known Groq model IDs (for validation). */
         val VALID_GROQ_MODELS = setOf(
             GROQ_DEFAULT_MODEL,
-            "llama3-8b-8192",
-            "llama-3.1-8b-instant",
-            "llama-3.1-70b-versatile",
-            "llama-3.3-70b-versatile",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it",
-            "deepseek-r1-distill-llama-70b",
-            "qwen-qwq-32b"
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-safeguard-20b",
+            "qwen/qwen3.6-27b"
         )
 
         fun defaultModelFor(provider: LlmProvider, settings: UserSettings): String = when (provider) {
-            // FIX: use the OG model that's been on Groq since day 1
             LlmProvider.GROQ -> GROQ_DEFAULT_MODEL
             LlmProvider.HUGGINGFACE -> "mistralai/Mistral-7B-Instruct-v0.3"
             LlmProvider.OPENROUTER -> "mistralai/mistral-7b-instruct:free"
             LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }
             LlmProvider.OPENAI_COMPAT_LOCAL -> settings.localOpenAiModel.ifBlank { "local-model" }
+            LlmProvider.CUSTOM -> settings.customProviderModel.ifBlank { "" }
         }
     }
 }
