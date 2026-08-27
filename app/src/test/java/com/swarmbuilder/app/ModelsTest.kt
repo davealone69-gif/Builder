@@ -43,9 +43,9 @@ class ModelsTest {
     }
 
     @Test
-    fun `UserSettings defaults use OPENROUTER provider and local-first off`() {
+    fun `UserSettings defaults use HERMES_AGENT provider and local-first off`() {
         val settings = UserSettings()
-        assertEquals(LlmProvider.OPENROUTER, settings.preferredProvider)
+        assertEquals(LlmProvider.HERMES_AGENT, settings.preferredProvider)
         assertFalse(settings.useLocalOllama)
         assertFalse(settings.localFirst)
         assertEquals("llama3", settings.ollamaModel)

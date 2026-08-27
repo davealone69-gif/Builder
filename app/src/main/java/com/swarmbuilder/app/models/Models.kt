@@ -49,10 +49,11 @@ enum class LlmProvider(val displayName: String, val baseUrl: String) {
     OPENROUTER("OpenRouter (free tier)", "https://openrouter.ai/api/v1"),
     OLLAMA_LOCAL("Ollama (local)", "http://localhost:11434/api"),
     OPENAI_COMPAT_LOCAL("Local OpenAI-Compatible", "http://127.0.0.1:8081/v1"),
-    CUSTOM("Custom (your own URL)", "https://api.openai.com/v1");
+    CUSTOM("Custom (your own URL)", "https://api.openai.com/v1"),
+    HERMES_AGENT("Hermes Agent (local)", "http://localhost:8642/v1");
 
     val supportsSystemPrompt: Boolean get() = this != HUGGINGFACE
-    val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM
+    val requiresApiKey: Boolean get() = this == GROQ || this == HUGGINGFACE || this == OPENROUTER || this == CUSTOM || this == HERMES_AGENT
 }
 
 data class AppSpec(
@@ -104,7 +105,7 @@ data class UserSettings(
     val githubRepoName: String = "",
 
     // ── Default provider (fallback) ─────────────────
-    val preferredProvider: LlmProvider = LlmProvider.OPENROUTER,
+    val preferredProvider: LlmProvider = LlmProvider.HERMES_AGENT,
 
     // ── Local / Ollama ──────────────────────────────
     val useLocalOllama: Boolean = false,

@@ -49,6 +49,14 @@ class LlmClientTest {
     }
 
     @Test
+    fun `defaultModelFor HERMES_AGENT returns hermes-agent model`() {
+        assertEquals(
+            "hermes-agent",
+            LlmClient.defaultModelFor(LlmProvider.HERMES_AGENT, UserSettings())
+        )
+    }
+
+    @Test
     fun `SourceFile list can be built and filtered`() {
         val files = listOf(
             SourceFile("app/src/main/java/MainActivity.kt", "class MainActivity"),

@@ -41,6 +41,7 @@ class LlmClient(private val settings: UserSettings) {
             LlmProvider.OLLAMA_LOCAL -> settings.ollamaModel.ifBlank { "llama3" }
             LlmProvider.OPENAI_COMPAT_LOCAL -> settings.localOpenAiModel.ifBlank { "local-model" }
             LlmProvider.CUSTOM -> settings.customProviderModel.ifBlank { "" }
+            LlmProvider.HERMES_AGENT -> "hermes-agent"
         }
     }
 
@@ -81,6 +82,7 @@ class LlmClient(private val settings: UserSettings) {
             LlmProvider.OLLAMA_LOCAL -> ollamaComplete(prompt, systemPrompt, modelId)
             LlmProvider.OPENAI_COMPAT_LOCAL -> localOpenAiComplete(prompt, systemPrompt, modelId, maxOutputTokens)
             LlmProvider.CUSTOM -> customComplete(prompt, systemPrompt, modelId, maxOutputTokens)
+            LlmProvider.HERMES_AGENT -> hermesAgentComplete(prompt, systemPrompt, modelId, maxOutputTokens)
         }
     }
 
@@ -200,6 +202,25 @@ class LlmClient(private val settings: UserSettings) {
         if (apiKey.isNotBlank()) reqBuilder.addHeader("Authorization", "Bearer $apiKey")
 
         return executeAndExtractContentWithRetry(reqBuilder.build(), "Custom", resolvedModel)
+    }
+
+    /**
+     * Hermes-agent: OpenAI-compatible API at http://localhost:8642/v1
+     * Default model: "hermes-agent"
+     * Default API key: "change-me-local-dev"
+     */
+    private suspend fun hermesAgentComplete(prompt: String, system: String, model: String, maxOutputTokens: Int): String {
+        val baseUrl = "http://localhost:8642/v1"
+        val resolvedModel = if (model.isNotBlank()) model else "hermes-agent"
+        val apiKey = "change-me-local-dev" // Default Hermes-agent key
+
+        val body = chatBody(prompt, system, resolvedModel, maxOutputTokens).toRequestBody(jsonMedia)
+        val req = Request.Builder()
+            .url("$baseUrl/chat/completions")
+            .addHeader("Authorization", "Bearer $apiKey")
+            .post(body).build()
+
+        return executeAndExtractContentWithRetry(req, "Hermes Agent", resolvedModel)
     }
 
     // ── Ollama ───────────────────────────────────────
