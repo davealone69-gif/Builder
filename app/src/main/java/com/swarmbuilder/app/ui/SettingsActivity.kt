@@ -95,9 +95,9 @@ class SettingsActivity : AppCompatActivity() {
         val provider = LlmProvider.values().getOrElse(selectedIdx) { LlmProvider.GROQ }
         val show = provider == LlmProvider.CUSTOM
         val visible = if (show) android.view.View.VISIBLE else android.view.View.GONE
-        binding.etCustomUrl.parent?.parent?.let { it.visibility = visible }
-        binding.etCustomModel.parent?.parent?.let { it.visibility = visible }
-        binding.etCustomKey.parent?.parent?.let { it.visibility = visible }
+        (binding.etCustomUrl.parent?.parent as? android.view.View)?.visibility = visible
+        (binding.etCustomModel.parent?.parent as? android.view.View)?.visibility = visible
+        (binding.etCustomKey.parent?.parent as? android.view.View)?.visibility = visible
     }
 
     private fun saveSettings(app: SwarmBuilderApp) {
