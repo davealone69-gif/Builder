@@ -26,7 +26,8 @@ concurrency:
 
 jobs:
   build:
-    name: Build APKs
+    name:       - name: Build APKs
+        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
     runs-on: ubuntu-latest
     permissions:
       contents: read
