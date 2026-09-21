@@ -1,0 +1,91 @@
+name: Full Code Audit
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        if: ${{ hashFiles('gradlew') != '' }}
+        run: chmod +x gradlew
+
+      - name: Run Android/Kotlin quality tasks when available
+        if: ${{ hashFiles('gradlew') != '' }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          run_task() {
+            local task="$1"
+            echo "::group::$task"
+            if ./gradlew help --task "$task" --console=plain >/dev/null 2>&1; then
+              ./gradlew "$task" --continue --console=plain
+            else
+              echo "SKIP: Gradle task $task is not defined"
+            fi
+            echo "::endgroup::"
+          }
+          run_task lint
+          run_task detekt
+          run_task ktlintCheck
+          run_task test
+
+      - name: Build debug APK
+        if: ${{ hashFiles('gradlew') != '' }}
+        run: ./gradlew assembleDebug --stacktrace --console=plain
+
+  qodana:
+    name: Qodana whole-repository scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Qodana
+        uses: JetBrains/qodana-action@v2026.2
+        with:
+          args: --linter qodana-android-community
+
+  codeql:
+    name: CodeQL security scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
