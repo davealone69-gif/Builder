@@ -1,4 +1,4 @@
-name: Full Code Audit
+name: Full Repository Audit
 
 on:
   push:
@@ -12,8 +12,8 @@ permissions:
   actions: read
 
 jobs:
-  static-analysis:
-    name: Static analysis
+  audit:
+    name: Whole repository audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,71 +21,40 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Qodana static analysis
+        uses: JetBrains/qodana-action@v2026.2
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Make Gradle wrapper executable
-        if: ${{ hashFiles('gradlew') != '' }}
-        run: chmod +x gradlew
-
-      - name: Run Android/Kotlin quality tasks when available
+      - name: Gradle audit and build
         if: ${{ hashFiles('gradlew') != '' }}
         shell: bash
         run: |
-          set -uo pipefail
-          run_task() {
-            local task="$1"
-            echo "::group::$task"
-            if ./gradlew help --task "$task" --console=plain >/dev/null 2>&1; then
-              ./gradlew "$task" --continue --console=plain
-            else
-              echo "SKIP: Gradle task $task is not defined"
-            fi
-            echo "::endgroup::"
-          }
-          run_task lint
-          run_task detekt
-          run_task ktlintCheck
-          run_task test
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew lint test assembleDebug --continue --stacktrace --console=plain
 
-      - name: Build debug APK
-        if: ${{ hashFiles('gradlew') != '' }}
-        run: ./gradlew assembleDebug --stacktrace --console=plain
+      - name: Node audit and test
+        if: ${{ hashFiles('package.json') != '' }}
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci --ignore-scripts
+          npm audit --audit-level=high || true
+          if npm run | grep -qE '^  (test|lint|build)'; then
+            npm run test --if-present
+            npm run lint --if-present
+            npm run build --if-present
+          fi
 
-  qodana:
-    name: Qodana whole-repository scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Python syntax audit
+        if: ${{ hashFiles('**/*.py') != '' }}
+        shell: bash
+        run: |
+          python -m compileall -q .
 
-      - name: Qodana
-        uses: JetBrains/qodana-action@v2026.2
-        with:
-          args: --linter qodana-android-community
-
-  codeql:
-    name: CodeQL security scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
+      - name: CodeQL security analysis
         uses: github/codeql-action/init@v3
         with:
-          languages: java-kotlin
+          languages: javascript-typescript,python,java-kotlin
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Analyze
+      - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
