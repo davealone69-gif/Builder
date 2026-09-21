@@ -1,17 +1,5 @@
 name: Build & Release APK
 
-# Single workflow (replaces the old "Build APK" + "Build and Release APK"
-# + "CI Status" trio):
-#   * every push/PR to main  -> unit tests, build, artifact upload (read-only token)
-#   * push of tag v*         -> same, plus a release job (write-scoped token)
-#   * manual dispatch        -> same as a tag push (tag is named automatically)
-#
-# Hardening:
-#   * Gradle exit code is NEVER masked; the job fails loudly if no APK is produced
-#   * release step has fail_on_unmatched_files: true
-#   * concurrency cancels stale runs when pushing rapidly
-#   * least privilege: `contents: write` exists only on the release job
-
 on:
   push:
     branches: [ main ]
@@ -26,94 +14,68 @@ concurrency:
 
 jobs:
   build:
-    name:       - name: Build APKs
-        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+    name: Build APKs
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v6
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
       - name: Accept licenses + install platform
         run: |
           yes | sdkmanager --licenses || true
           sdkmanager "platforms;android-34" "build-tools;34.0.0"
-
       - name: Make gradlew executable
         run: chmod +x gradlew
-
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
-
-      - name: Build APKs
-        run: ./gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
-
-      - name: Verify and collect APKs
+      - name: Build APKs and AAB
+        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+      - name: Verify and collect artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p release-apks
-          echo "=== Expected app output ==="
-          find app/build/outputs -type f -name '*.apk' -print 2>/dev/null || true
-          echo "=== All APKs in workspace ==="
-          find . -type f -name '*.apk' -not -path './.gradle/*' -not -path './gradle/*' -print
-          mapfile -t apks < <(find . -type f -name '*.apk' -not -path './.gradle/*' -not -path './gradle/*' -print)
-          if (( ${#apks[@]} == 0 )); then
-            echo 'ERROR: Gradle completed but produced no APK anywhere.'
-            find app/build/outputs -maxdepth 6 -print 2>/dev/null || true
-            exit 1
-          fi
-          for apk in "${apks[@]}"; do
-            cp -v "$apk" release-apks/
-          done
-          echo "=== Collected APKs ==="
-          ls -lah release-apks
-          test -n "$(find release-apks -maxdepth 1 -type f -name '*.apk' -print -quit)"
-
-      - name: Upload APKs as artifacts
+          mkdir -p release-artifacts
+          mapfile -t apks < <(find app/build/outputs -type f -name '*.apk' -print)
+          mapfile -t aabs < <(find app/build/outputs -type f -name '*.aab' -print)
+          (( ${#apks[@]} > 0 )) || { echo "ERROR: no APK produced"; exit 1; }
+          (( ${#aabs[@]} > 0 )) || { echo "ERROR: no AAB produced"; exit 1; }
+          for f in "${apks[@]}" "${aabs[@]}"; do cp -v "$f" release-artifacts/; done
+          ls -lah release-artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: swarmbuilder-apks
-          path: release-apks/*.apk
+          name: swarmbuilder-android-artifacts
+          path: release-artifacts/*
           if-no-files-found: error
           retention-days: 30
 
   release:
     name: Publish Release
-    # Only tags and manual runs reach this job, and it is the ONLY job with
-    # write permissions on the repo.
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - name: Download APK artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: swarmbuilder-apks
-          path: release-apks
-
-      - name: Create GitHub Release with APKs
+          name: swarmbuilder-android-artifacts
+          path: release-artifacts
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,5 +83,5 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v1.1.{0}', github.run_number) || github.ref_name }}
           name: SwarmBuilder ${{ github.event_name == 'workflow_dispatch' && format('build {0}', github.run_number) || github.ref_name }}
           generate_release_notes: true
-          files: release-apks/*.apk
+          files: release-artifacts/*
           fail_on_unmatched_files: true
