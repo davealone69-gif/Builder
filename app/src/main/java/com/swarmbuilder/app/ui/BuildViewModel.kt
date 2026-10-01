@@ -9,12 +9,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.swarmbuilder.app.SwarmBuilderApp
 import com.swarmbuilder.app.build.ApkBuilder
+import com.swarmbuilder.app.build.OnDeviceGradleEnv
 import com.swarmbuilder.app.codegen.ProjectWriter
 import com.swarmbuilder.app.github.GitHubPublisher
 import com.swarmbuilder.app.models.AppSpec
 import com.swarmbuilder.app.models.BuildResult
 import com.swarmbuilder.app.models.LogLevel
 import com.swarmbuilder.app.models.SwarmLog
+import com.swarmbuilder.app.swarm.ImageClient
 import com.swarmbuilder.app.swarm.SwarmOrchestrator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,11 +39,14 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
     val githubUrl: LiveData<String?> = _githubUrl
     private val _errorMessage = MutableLiveData<String?>(null)
     val errorMessage: LiveData<String?> = _errorMessage
+    private val _imagePath = MutableLiveData<String?>(null)
+    val imagePath: LiveData<String?> = _imagePath
 
     fun start(prompt: String) {
         if (_isRunning.value == true) return
         _isRunning.value = true
         _errorMessage.value = null
+        _imagePath.value = null
 
         viewModelScope.launch {
             val settings = app.userSettings
@@ -52,8 +57,10 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
             apkBuilder.logs.onEach { _logs.emit(it) }.launchIn(this)
 
             try {
+                emit(OnDeviceGradleEnv.diagnosticReport(app))
+
                 _phase.postValue("🤖 Swarm generating code…")
-                emit("Starting cost-aware swarm for prompt: $prompt")
+                emit("Starting swarm for prompt: $prompt")
                 var files = orchestrator.run(prompt)
 
                 val appName = files.find { it.relativePath.contains("settings.gradle") }
@@ -65,7 +72,32 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
                     packageName = "com.generated.app"
                 )
 
-                // Compiler-first loop. AI is called again only after real Gradle failure.
+                // Optional real image generation (HF token required)
+                if (settings.huggingFaceToken.isNotBlank()) {
+                    try {
+                        _phase.postValue("🖼 Generating image…")
+                        val imageClient = ImageClient(settings)
+                        val img = imageClient.generate(
+                            context = app,
+                            prompt = "App icon, modern flat design, no text: $appName. $prompt",
+                        )
+                        _imagePath.postValue(img.absolutePath)
+                        emit("Image saved: ${img.absolutePath}", LogLevel.SUCCESS)
+
+                        // Drop into generated project res if present
+                        val projectPreview = writer.write(spec, files)
+                        val drawableDir = File(projectPreview, "app/src/main/res/drawable")
+                        if (drawableDir.exists() || drawableDir.mkdirs()) {
+                            img.copyTo(File(drawableDir, "generated_icon.png"), overwrite = true)
+                            emit("Copied generated icon into project drawable/")
+                        }
+                    } catch (e: Exception) {
+                        emit("Image generation skipped/failed: ${e.message}", LogLevel.WARNING)
+                    }
+                } else {
+                    emit("No HF token — skipping image generation", LogLevel.WARNING)
+                }
+
                 val maxRepairPasses = 8
                 val pipelineStartMs = System.currentTimeMillis()
                 var repairPass = 0
@@ -75,8 +107,7 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
                 while (true) {
                     if (System.currentTimeMillis() - pipelineStartMs > PIPELINE_MAX_MS) {
                         throw IllegalStateException(
-                            "Pipeline exceeded the ${PIPELINE_MAX_MS / 60_000} minute overall limit. " +
-                                "Stopping to protect battery and data."
+                            "Pipeline exceeded the ${PIPELINE_MAX_MS / 60_000} minute overall limit."
                         )
                     }
                     _phase.postValue(
@@ -96,7 +127,7 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
 
                     repairPass++
                     emit(
-                        "Gradle failed. Sending actual compiler diagnostics to Repair pass $repairPass.",
+                        "Gradle failed. Sending compiler diagnostics to Repair pass $repairPass.",
                         LogLevel.WARNING
                     )
                     files = orchestrator.repair(
@@ -110,7 +141,7 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
                 buildResult.apkPath?.let { _apkPath.postValue(it) }
 
                 if (settings.githubToken.isNotBlank() && settings.githubUsername.isNotBlank()) {
-                    _phase.postValue("🚀 Pushing working project to GitHub…")
+                    _phase.postValue("🚀 Pushing to GitHub…")
                     val publisher = GitHubPublisher(settings)
                     publisher.logs.onEach { _logs.emit(it) }.launchIn(this)
                     val url = publisher.publish(spec, projectDir!!, buildResult)
@@ -131,12 +162,36 @@ class BuildViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Standalone image generation (no APK pipeline). */
+    fun generateImageOnly(prompt: String) {
+        if (_isRunning.value == true) return
+        _isRunning.value = true
+        _errorMessage.value = null
+        viewModelScope.launch {
+            try {
+                _phase.postValue("🖼 Generating image…")
+                val settings = app.userSettings
+                val img = ImageClient(settings).generate(app, prompt)
+                _imagePath.postValue(img.absolutePath)
+                emit("Image saved: ${img.absolutePath}", LogLevel.SUCCESS)
+                _phase.postValue("✅ Image ready")
+            } catch (e: Exception) {
+                val msg = "Image error: ${e.message}"
+                emit(msg, LogLevel.ERROR)
+                _errorMessage.postValue(msg)
+                _phase.postValue("❌ Failed")
+            } finally {
+                _isRunning.postValue(false)
+            }
+        }
+    }
+
     private suspend fun emit(msg: String, level: LogLevel = LogLevel.INFO) {
         _logs.emit(SwarmLog("System", msg, level))
     }
 
     private companion object {
-        const val PIPELINE_MAX_MS = 90L * 60L * 1000L // 90 minutes end-to-end
+        const val PIPELINE_MAX_MS = 90L * 60L * 1000L
     }
 }
 
