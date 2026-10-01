@@ -13,7 +13,7 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/** On-device Gradle builder with compiler diagnostics retained for AI repair. */
+/** On-device Gradle builder with SDK/JDK detection and compiler diagnostics for AI repair. */
 class ApkBuilder(context: Context) {
     val logs: SharedFlow<SwarmLog> get() = _logs
     private val _logs = MutableSharedFlow<SwarmLog>(replay = 64)
@@ -24,9 +24,28 @@ class ApkBuilder(context: Context) {
         val gradlew = File(projectDir, "gradlew")
         if (!gradlew.exists()) {
             emit("Gradle wrapper not found in generated project", LogLevel.ERROR)
-            return@withContext BuildResult(false, spec.appName, errorMessage = "Generated project is missing Gradle wrapper")
+            return@withContext BuildResult(
+                false, spec.appName,
+                errorMessage = "Generated project is missing Gradle wrapper"
+            )
         }
         gradlew.setExecutable(true)
+
+        // Detect JAVA_HOME + ANDROID_SDK_ROOT and write local.properties
+        val env = OnDeviceGradleEnv.applyToProject(appContext, projectDir)
+        emit(OnDeviceGradleEnv.diagnosticReport(appContext))
+
+        if (!env.isUsable) {
+            return@withContext BuildResult(
+                false,
+                spec.appName,
+                errorMessage = buildString {
+                    appendLine("On-device Gradle prerequisites missing.")
+                    appendLine(OnDeviceGradleEnv.diagnosticReport(appContext))
+                }
+            )
+        }
+
         lastApkCache.restoreFrameworks(projectDir) { message -> emitSync(message) }
 
         val outputDir = File(appContext.filesDir, "apks").also { it.mkdirs() }
@@ -34,18 +53,24 @@ class ApkBuilder(context: Context) {
         val targetApk = File(outputDir, apkName)
         emit("Starting Gradle build for ${spec.appName}…")
 
+        val processEnv = OnDeviceGradleEnv.processEnvironment(env)
         val process = try {
-            ProcessBuilder(gradlew.absolutePath, "assembleDebug")
+            ProcessBuilder(listOf(gradlew.absolutePath, "assembleDebug", "--no-daemon", "--stacktrace"))
                 .directory(projectDir)
                 .redirectErrorStream(true)
+                .apply {
+                    environment().clear()
+                    environment().putAll(processEnv)
+                }
                 .start()
         } catch (e: IOException) {
             emit("Could not start Gradle build: ${e.message}", LogLevel.ERROR)
-            return@withContext BuildResult(false, spec.appName, errorMessage = "Gradle build failed to start: ${e.message}")
+            return@withContext BuildResult(
+                false, spec.appName,
+                errorMessage = "Gradle build failed to start: ${e.message}"
+            )
         }
 
-        // Read output on a background thread so the main watchdog can enforce
-        // an overall build timeout even if Gradle stops emitting output.
         val diagnostics = StringBuilder()
         val reader = Thread {
             process.inputStream.bufferedReader().useLines { lines ->
@@ -110,8 +135,6 @@ class ApkBuilder(context: Context) {
     }
 
     private companion object {
-        // On-device builds can download the Gradle distribution + AGP on first
-        // run, so this is generous — but never unbounded.
         const val BUILD_TIMEOUT_MINUTES = 30L
     }
 }

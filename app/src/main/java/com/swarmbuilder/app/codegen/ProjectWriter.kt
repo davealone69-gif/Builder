@@ -1,14 +1,13 @@
 package com.swarmbuilder.app.codegen
 
 import android.content.Context
+import com.swarmbuilder.app.build.OnDeviceGradleEnv
 import com.swarmbuilder.app.models.AppSpec
 import com.swarmbuilder.app.models.SourceFile
 import java.io.File
 
 /**
- * Writes the LLM-generated [SourceFile] list onto disk inside a temporary
- * project directory and ensures the generated project has a usable Gradle
- * wrapper scaffold.
+ * Writes LLM-generated sources and ensures a usable Gradle wrapper + local.properties.
  */
 class ProjectWriter(private val context: Context) {
 
@@ -18,8 +17,6 @@ class ProjectWriter(private val context: Context) {
         val projectRoot = projectDir.canonicalPath + File.separator
 
         files.forEach { sf ->
-            // Guard against path traversal in LLM-generated file names —
-            // every target must stay inside the project directory.
             val target = File(projectDir, sf.relativePath).canonicalFile
             require(target.path.startsWith(projectRoot)) {
                 "Refusing to write outside project dir: ${sf.relativePath}"
@@ -29,7 +26,7 @@ class ProjectWriter(private val context: Context) {
         }
 
         ensureGradleWrapper(projectDir)
-        ensureLocalProperties(projectDir)
+        OnDeviceGradleEnv.applyToProject(context, projectDir)
 
         return projectDir
     }
@@ -50,8 +47,6 @@ class ProjectWriter(private val context: Context) {
             )
         }
 
-        // The LLM normally cannot generate a binary wrapper JAR. Bundle the
-        // known-good wrapper in the Builder APK and copy it into the project.
         val wrapperJar = File(wrapperDir, "gradle-wrapper.jar")
         if (!wrapperJar.exists() || wrapperJar.length() < 10_000L) {
             context.assets.open("gradle-wrapper.jar").use { input ->
@@ -66,27 +61,17 @@ class ProjectWriter(private val context: Context) {
         gradlew.setExecutable(true)
     }
 
-    private fun ensureLocalProperties(dir: File) {
-        val lp = File(dir, "local.properties")
-        if (lp.exists()) return
-
-        val sdkPath = sequenceOf(
-            System.getenv("ANDROID_SDK_ROOT"),
-            System.getenv("ANDROID_HOME")
-        ).firstOrNull { !it.isNullOrBlank() }
-
-        if (!sdkPath.isNullOrBlank()) {
-            lp.writeText("sdk.dir=$sdkPath\n")
-        }
-    }
-
     companion object {
-        // Escape shell variables so Kotlin does not interpolate them at compile time.
         private val GRADLEW_SCRIPT = """
             #!/usr/bin/env sh
             APP_HOME=${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)
             CLASSPATH="${'$'}APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-            exec java -classpath "${'$'}CLASSPATH" org.gradle.wrapper.GradleWrapperMain "${'$'}@"
+            if [ -n "${'$'}JAVA_HOME" ] && [ -x "${'$'}JAVA_HOME/bin/java" ]; then
+              JAVACMD="${'$'}JAVA_HOME/bin/java"
+            else
+              JAVACMD=java
+            fi
+            exec "${'$'}JAVACMD" -classpath "${'$'}CLASSPATH" org.gradle.wrapper.GradleWrapperMain "${'$'}@"
         """.trimIndent()
     }
 }
