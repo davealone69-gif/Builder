@@ -1,1 +1,3 @@
-IiIiM0RvdWJsZSBEIGJhY2tlbmQgcGFja2FnZS4iIiIKCl9fdmVyc2lvbl9fID0gIjEuMC4wIgo=
+"""3Double D backend package."""
+
+__version__ = "1.0.0"
