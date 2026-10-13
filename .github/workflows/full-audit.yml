@@ -20,6 +20,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: CodeQL security analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript,python,java-kotlin
+
       - name: Gradle audit and build
         if: ${{ hashFiles('gradlew') != '' }}
         shell: bash
@@ -46,11 +51,6 @@ jobs:
         shell: bash
         run: |
           python -m compileall -q .
-
-      - name: CodeQL security analysis
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript,python,java-kotlin
 
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
