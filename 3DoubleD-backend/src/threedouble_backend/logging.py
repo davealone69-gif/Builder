@@ -1,1 +1,77 @@
-IiIiU3RydWN0dXJlZCAoSlNPTikgbG9nZ2luZyBjb25maWd1cmF0aW9uIGZvciB0aGUgM0RvdWJsZSBEIGJhY2tlbmQuCgpFbWl0cyBvbmUgSlNPTiBvYmplY3QgcGVyIGxvZyBsaW5lIHZpYSBhIGN1c3RvbSBmb3JtYXR0ZXIgc28gbG9ncyBhcmUKbWFjaGluZS1wYXJzZWFibGUgKHN1aXRhYmxlIGZvciBDbG91ZFdhdGNoLCBMb2tpLCBEYXRhRG9nLCBldGMuKS4KIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgppbXBvcnQganNvbgppbXBvcnQgbG9nZ2luZwppbXBvcnQgc3lzCmZyb20gZGF0ZXRpbWUgaW1wb3J0IGRhdGV0aW1lLCB0aW1lem9uZQpmcm9tIHR5cGluZyBpbXBvcnQgQW55CgpfUkVTRVJWRUQgPSB7CiAgICAibmFtZSIsCiAgICAibXNnIiwKICAgICJhcmdzIiwKICAgICJsZXZlbG5hbWUiLAogICAgImxldmVsbm8iLAogICAgInBhdGhuYW1lIiwKICAgICJmaWxlbmFtZSIsCiAgICAibW9kdWxlIiwKICAgICJleGNfaW5mbyIsCiAgICAiZXhjX3RleHQiLAogICAgInN0YWNrX2luZm8iLAogICAgImxpbmVubyIsCiAgICAiZnVuY05hbWUiLAogICAgImNyZWF0ZWQiLAogICAgIm1zZWNzIiwKICAgICJyZWxhdGl2ZUNyZWF0ZWQiLAogICAgInRocmVhZCIsCiAgICAidGhyZWFkTmFtZSIsCiAgICAicHJvY2Vzc05hbWUiLAogICAgInByb2Nlc3MiLAogICAgInRhc2tOYW1lIiwKfQoKCmNsYXNzIEpzb25Gb3JtYXR0ZXIobG9nZ2luZy5Gb3JtYXR0ZXIpOgogICAgIiIiRm9ybWF0IGxvZyByZWNvcmRzIGFzIHNpbmdsZS1saW5lIEpTT04gb2JqZWN0cy4iIiIKCiAgICBkZWYgZm9ybWF0KHNlbGYsIHJlY29yZDogbG9nZ2luZy5Mb2dSZWNvcmQpIC0+IHN0cjoKICAgICAgICBwYXlsb2FkOiBkaWN0W3N0ciwgQW55XSA9IHsKICAgICAgICAgICAgInRzIjogZGF0ZXRpbWUubm93KHRpbWV6b25lLnV0YykuaXNvZm9ybWF0KCksCiAgICAgICAgICAgICJsZXZlbCI6IHJlY29yZC5sZXZlbG5hbWUsCiAgICAgICAgICAgICJsb2dnZXIiOiByZWNvcmQubmFtZSwKICAgICAgICAgICAgIm1lc3NhZ2UiOiByZWNvcmQuZ2V0TWVzc2FnZSgpLAogICAgICAgIH0KICAgICAgICAjIEluY2x1ZGUgY2FsbGVyIGxvY2F0aW9uIHdoZW4gYXZhaWxhYmxlLgogICAgICAgIGlmIHJlY29yZC5wYXRobmFtZToKICAgICAgICAgICAgcGF5bG9hZFsiZmlsZSJdID0gcmVjb3JkLnBhdGhuYW1lCiAgICAgICAgICAgIHBheWxvYWRbImxpbmUiXSA9IHJlY29yZC5saW5lbm8KCiAgICAgICAgIyBNZXJnZSBhbnkgc3RydWN0dXJlZCBgYGV4dHJhYGAga3dhcmdzIChza2lwIGxvZ2dpbmctcmVzZXJ2ZWQga2V5cykuCiAgICAgICAgZXh0cmEgPSBnZXRhdHRyKHJlY29yZCwgIl9zdHJ1Y3R1cmVkIiwgTm9uZSkKICAgICAgICBpZiBpc2luc3RhbmNlKGV4dHJhLCBkaWN0KToKICAgICAgICAgICAgZm9yIGtleSwgdmFsdWUgaW4gZXh0cmEuaXRlbXMoKToKICAgICAgICAgICAgICAgIGlmIGtleSBub3QgaW4gX1JFU0VSVkVEIGFuZCBrZXkgbm90IGluIHBheWxvYWQ6CiAgICAgICAgICAgICAgICAgICAgcGF5bG9hZFtrZXldID0gdmFsdWUKCiAgICAgICAgaWYgcmVjb3JkLmV4Y19pbmZvOgogICAgICAgICAgICBwYXlsb2FkWyJleGMiXSA9IHNlbGYuZm9ybWF0RXhjZXB0aW9uKHJlY29yZC5leGNfaW5mbykKCiAgICAgICAgcmV0dXJuIGpzb24uZHVtcHMocGF5bG9hZCwgZGVmYXVsdD1zdHIpCgoKZGVmIGdldF9sb2dnZXIobmFtZTogc3RyID0gInRocmVlZG91YmxlIikgLT4gbG9nZ2luZy5Mb2dnZXI6CiAgICAiIiJSZXR1cm4gYSBKU09OLXN0cnVjdHVyZWQgbG9nZ2VyIGNvbmZpZ3VyZWQgZm9yIHRoZSBnaXZlbiBuYW1lLiIiIgogICAgbG9nZ2VyID0gbG9nZ2luZy5nZXRMb2dnZXIobmFtZSkKICAgIGlmIG5vdCBsb2dnZXIuaGFuZGxlcnM6CiAgICAgICAgaGFuZGxlciA9IGxvZ2dpbmcuU3RyZWFtSGFuZGxlcihzeXMuc3Rkb3V0KQogICAgICAgIGhhbmRsZXIuc2V0Rm9ybWF0dGVyKEpzb25Gb3JtYXR0ZXIoKSkKICAgICAgICBsb2dnZXIuYWRkSGFuZGxlcihoYW5kbGVyKQogICAgICAgIGxvZ2dlci5zZXRMZXZlbChsb2dnaW5nLklORk8pCiAgICAgICAgbG9nZ2VyLnByb3BhZ2F0ZSA9IEZhbHNlCiAgICByZXR1cm4gbG9nZ2VyCg==
+"""Structured (JSON) logging configuration for the 3Double D backend.
+
+Emits one JSON object per log line via a custom formatter so logs are
+machine-parseable (suitable for CloudWatch, Loki, DataDog, etc.).
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import sys
+from datetime import datetime, timezone
+from typing import Any
+
+_RESERVED = {
+    "name",
+    "msg",
+    "args",
+    "levelname",
+    "levelno",
+    "pathname",
+    "filename",
+    "module",
+    "exc_info",
+    "exc_text",
+    "stack_info",
+    "lineno",
+    "funcName",
+    "created",
+    "msecs",
+    "relativeCreated",
+    "thread",
+    "threadName",
+    "processName",
+    "process",
+    "taskName",
+}
+
+
+class JsonFormatter(logging.Formatter):
+    """Format log records as single-line JSON objects."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, Any] = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        # Include caller location when available.
+        if record.pathname:
+            payload["file"] = record.pathname
+            payload["line"] = record.lineno
+
+        # Merge any structured ``extra`` kwargs (skip logging-reserved keys).
+        extra = getattr(record, "_structured", None)
+        if isinstance(extra, dict):
+            for key, value in extra.items():
+                if key not in _RESERVED and key not in payload:
+                    payload[key] = value
+
+        if record.exc_info:
+            payload["exc"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, default=str)
+
+
+def get_logger(name: str = "threedouble") -> logging.Logger:
+    """Return a JSON-structured logger configured for the given name."""
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(JsonFormatter())
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+    return logger
