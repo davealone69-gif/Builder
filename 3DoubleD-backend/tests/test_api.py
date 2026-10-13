@@ -1,1 +1,136 @@
-IiIiSW50ZWdyYXRpb24gdGVzdHMgZm9yIHRoZSAzRG91YmxlIEQgYmFja2VuZCBBUEkuIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgppbXBvcnQgcHl0ZXN0CmZyb20gZmFzdGFwaS50ZXN0Y2xpZW50IGltcG9ydCBUZXN0Q2xpZW50Cgpmcm9tIHRocmVlZG91YmxlX2JhY2tlbmQuY29uZmlnIGltcG9ydCBTZXR0aW5ncwpmcm9tIHRocmVlZG91YmxlX2JhY2tlbmQubWFpbiBpbXBvcnQgYXBwLCBzdG9yYWdlLCBzZXR0aW5ncwoKCkBweXRlc3QuZml4dHVyZShhdXRvdXNlPVRydWUpCmRlZiBfZnJlc2hfc3RvcmFnZSh0bXBfcGF0aCwgbW9ua2V5cGF0Y2gpOgogICAgIiIiUG9pbnQgc3RvcmFnZSBhdCBhIHRlbXAgZmlsZSBhbmQgcmVzZXQgaW4tbWVtb3J5IGNvbGxlY3Rpb25zLiIiIgogICAgc2V0dGluZ3MgPSBTZXR0aW5ncy5mcm9tX2VudigpCiAgICBzZXR0aW5ncy5kZF9kYXRhX2ZpbGUgPSBzdHIodG1wX3BhdGggLyAiZGF0YS5qc29uIikKICAgICMgUmVzZXQgdGhlIG1vZHVsZS1sZXZlbCBzdG9yYWdlIHRvIHRoZSB0ZW1wIGZpbGUgZm9yIGlzb2xhdGlvbi4KICAgIGZyb20gdGhyZWVkb3VibGVfYmFja2VuZCBpbXBvcnQgbWFpbgoKICAgIG1haW4uc3RvcmFnZSA9IHR5cGUoc3RvcmFnZSkoc3RyKHRtcF9wYXRoIC8gImRhdGEuanNvbiIpKQogICAgcmV0dXJuIG1haW4uc3RvcmFnZQoKCkBweXRlc3QuZml4dHVyZSgpCmRlZiBjbGllbnQoKSAtPiBUZXN0Q2xpZW50OgogICAgcmV0dXJuIFRlc3RDbGllbnQoYXBwKQoKCkBweXRlc3QuZml4dHVyZSgpCmRlZiB0b2tlbigpIC0+IHN0cjoKICAgIHJldHVybiAiY2hhbmdlbWUiCgoKZGVmIGF1dGhfaGVhZGVycyh0b2tlbjogc3RyKSAtPiBkaWN0W3N0ciwgc3RyXToKICAgIHJldHVybiB7IkF1dGhvcml6YXRpb24iOiBmIkJlYXJlciB7dG9rZW59In0KCgpkZWYgdGVzdF9oZWFsdGgoY2xpZW50OiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgcmVzcCA9IGNsaWVudC5nZXQoIi9oZWFsdGgiKQogICAgYXNzZXJ0IHJlc3Auc3RhdHVzX2NvZGUgPT0gMjAwCiAgICBib2R5ID0gcmVzcC5qc29uKCkKICAgIGFzc2VydCBib2R5WyJzdGF0dXMiXSA9PSAib2siCgoKZGVmIHRlc3RfbGlzdF9wcmVzZXRzKGNsaWVudDogVGVzdENsaWVudCkgLT4gTm9uZToKICAgIHJlc3AgPSBjbGllbnQuZ2V0KCIvcHJlc2V0cyIpCiAgICBhc3NlcnQgcmVzcC5zdGF0dXNfY29kZSA9PSAyMDAKICAgIHByZXNldHMgPSByZXNwLmpzb24oKQogICAgbmFtZXMgPSB7cFsibmFtZSJdIGZvciBwIGluIHByZXNldHN9CiAgICBhc3NlcnQgeyJWYW1waXJlIiwgIk1lZGlldmFsIiwgIkRlbW9uIiwgIkN5YmVycHVuayJ9IDw9IG5hbWVzCgoKZGVmIHRlc3RfZ2V0X3ByZXNldChjbGllbnQ6IFRlc3RDbGllbnQpIC0+IE5vbmU6CiAgICByZXNwID0gY2xpZW50LmdldCgiL3ByZXNldHMvdmFtcGlyZSIpCiAgICBhc3NlcnQgcmVzcC5zdGF0dXNfY29kZSA9PSAyMDAKICAgIGFzc2VydCByZXNwLmpzb24oKVsicHJpbWFyeV9tYXRlcmlhbCJdID09ICJQYWxlIgoKCmRlZiB0ZXN0X2dldF9wcmVzZXRfbWlzc2luZyhjbGllbnQ6IFRlc3RDbGllbnQpIC0+IE5vbmU6CiAgICByZXNwID0gY2xpZW50LmdldCgiL3ByZXNldHMvbm9wZSIpCiAgICBhc3NlcnQgcmVzcC5zdGF0dXNfY29kZSA9PSA0MDQKCgpkZWYgdGVzdF9saXN0X2Fzc2V0cyhjbGllbnQ6IFRlc3RDbGllbnQpIC0+IE5vbmU6CiAgICByZXNwID0gY2xpZW50LmdldCgiL2Fzc2V0cyIpCiAgICBhc3NlcnQgcmVzcC5zdGF0dXNfY29kZSA9PSAyMDAKICAgIGFzc2VydCBsZW4ocmVzcC5qc29uKCkpID09IDMKCgpkZWYgdGVzdF9hdmF0YXJzX3JlcXVpcmVfdG9rZW4oY2xpZW50OiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgcmVzcCA9IGNsaWVudC5nZXQoIi9hdmF0YXJzIikKICAgIGFzc2VydCByZXNwLnN0YXR1c19jb2RlID09IDQwMQoKCmRlZiB0ZXN0X2F2YXRhcl9jcnVkKGNsaWVudDogVGVzdENsaWVudCwgdG9rZW46IHN0cikgLT4gTm9uZToKICAgIGhlYWRlcnMgPSBhdXRoX2hlYWRlcnModG9rZW4pCiAgICBjcmVhdGUgPSBjbGllbnQucG9zdCgKICAgICAgICAiL2F2YXRhcnMiLAogICAgICAgIGpzb249eyJuYW1lIjogIk55eCIsICJwcmVzZXRfaWQiOiAiY3liZXJwdW5rIiwgIm1vcnBocyI6IHsiYm9keV9idWlsZCI6IDAuN319LAogICAgICAgIGhlYWRlcnM9aGVhZGVycywKICAgICkKICAgIGFzc2VydCBjcmVhdGUuc3RhdHVzX2NvZGUgPT0gMjAxCiAgICBhdmF0YXIgPSBjcmVhdGUuanNvbigpCiAgICBhaWQgPSBhdmF0YXJbImlkIl0KCiAgICBsaXN0ZWQgPSBjbGllbnQuZ2V0KCIvYXZhdGFycyIsIGhlYWRlcnM9aGVhZGVycykKICAgIGFzc2VydCBhbnkoYVsiaWQiXSA9PSBhaWQgZm9yIGEgaW4gbGlzdGVkLmpzb24oKSkKCiAgICBmZXRjaGVkID0gY2xpZW50LmdldChmIi9hdmF0YXJzL3thaWR9IiwgaGVhZGVycz1oZWFkZXJzKQogICAgYXNzZXJ0IGZldGNoZWQuanNvbigpWyJuYW1lIl0gPT0gIk55eCIKCiAgICB1cGRhdGVkID0gY2xpZW50LnB1dCgKICAgICAgICBmIi9hdmF0YXJzL3thaWR9IiwKICAgICAgICBqc29uPXsibmFtZSI6ICJOeXggdjIiLCAicHJlc2V0X2lkIjogInZhbXBpcmUiLCAibW9ycGhzIjoge319LAogICAgICAgIGhlYWRlcnM9aGVhZGVycywKICAgICkKICAgIGFzc2VydCB1cGRhdGVkLmpzb24oKVsibmFtZSJdID09ICJOeXggdjIiCgogICAgZGVsZXRlZCA9IGNsaWVudC5kZWxldGUoZiIvYXZhdGFycy97YWlkfSIsIGhlYWRlcnM9aGVhZGVycykKICAgIGFzc2VydCBkZWxldGVkLnN0YXR1c19jb2RlID09IDIwNAogICAgYXNzZXJ0IGNsaWVudC5nZXQoZiIvYXZhdGFycy97YWlkfSIsIGhlYWRlcnM9aGVhZGVycykuc3RhdHVzX2NvZGUgPT0gNDA0CgoKZGVmIHRlc3RfZXhwb3J0X2Zsb3coY2xpZW50OiBUZXN0Q2xpZW50LCB0b2tlbjogc3RyKSAtPiBOb25lOgogICAgaGVhZGVycyA9IGF1dGhfaGVhZGVycyh0b2tlbikKICAgIGF2YXRhciA9IGNsaWVudC5wb3N0KAogICAgICAgICIvYXZhdGFycyIsCiAgICAgICAganNvbj17Im5hbWUiOiAiUmVuZGVyIHRhcmdldCIsICJtb3JwaHMiOiB7fX0sCiAgICAgICAgaGVhZGVycz1oZWFkZXJzLAogICAgKS5qc29uKCkKCiAgICBjcmVhdGVkID0gY2xpZW50LnBvc3QoCiAgICAgICAgIi9leHBvcnRzIiwKICAgICAgICBqc29uPXsiYXZhdGFyX2lkIjogYXZhdGFyWyJpZCJdLCAiZm9ybWF0IjogInBuZyJ9LAogICAgICAgIGhlYWRlcnM9aGVhZGVycywKICAgICkKICAgIGFzc2VydCBjcmVhdGVkLnN0YXR1c19jb2RlID09IDIwMQogICAgam9iID0gY3JlYXRlZC5qc29uKCkKICAgIGFzc2VydCBqb2JbInN0YXR1cyJdID09ICJxdWV1ZWQiCgogICAgcG9sbGVkID0gY2xpZW50LmdldChmIi9leHBvcnRzL3tqb2JbJ2lkJ119IiwgaGVhZGVycz1oZWFkZXJzKQogICAgYXNzZXJ0IHBvbGxlZC5qc29uKClbImZvcm1hdCJdID09ICJwbmciCgoKZGVmIHRlc3RfZXhwb3J0X21pc3NpbmdfYXZhdGFyKGNsaWVudDogVGVzdENsaWVudCwgdG9rZW46IHN0cikgLT4gTm9uZToKICAgIHJlc3AgPSBjbGllbnQucG9zdCgKICAgICAgICAiL2V4cG9ydHMiLAogICAgICAgIGpzb249eyJhdmF0YXJfaWQiOiAiZG9lcy1ub3QtZXhpc3QiLCAiZm9ybWF0IjogInBuZyJ9LAogICAgICAgIGhlYWRlcnM9YXV0aF9oZWFkZXJzKHRva2VuKSwKICAgICkKICAgIGFzc2VydCByZXNwLnN0YXR1c19jb2RlID09IDQwNAoKCmRlZiB0ZXN0X2ludmFsaWRfdG9rZW4oY2xpZW50OiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgcmVzcCA9IGNsaWVudC5nZXQoIi9hdmF0YXJzIiwgaGVhZGVycz17IkF1dGhvcml6YXRpb24iOiAiQmVhcmVyIHdyb25nIn0pCiAgICBhc3NlcnQgcmVzcC5zdGF0dXNfY29kZSA9PSA0MDEK
+"""Integration tests for the 3Double D backend API."""
+
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+
+from threedouble_backend.config import Settings
+from threedouble_backend.main import app, storage, settings
+
+
+@pytest.fixture(autouse=True)
+def _fresh_storage(tmp_path, monkeypatch):
+    """Point storage at a temp file and reset in-memory collections."""
+    settings = Settings.from_env()
+    settings.dd_data_file = str(tmp_path / "data.json")
+    # Reset the module-level storage to the temp file for isolation.
+    from threedouble_backend import main
+
+    main.storage = type(storage)(str(tmp_path / "data.json"))
+    return main.storage
+
+
+@pytest.fixture()
+def client() -> TestClient:
+    return TestClient(app)
+
+
+@pytest.fixture()
+def token() -> str:
+    return "changeme"
+
+
+def auth_headers(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_health(client: TestClient) -> None:
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+
+
+def test_list_presets(client: TestClient) -> None:
+    resp = client.get("/presets")
+    assert resp.status_code == 200
+    presets = resp.json()
+    names = {p["name"] for p in presets}
+    assert {"Vampire", "Medieval", "Demon", "Cyberpunk"} <= names
+
+
+def test_get_preset(client: TestClient) -> None:
+    resp = client.get("/presets/vampire")
+    assert resp.status_code == 200
+    assert resp.json()["primary_material"] == "Pale"
+
+
+def test_get_preset_missing(client: TestClient) -> None:
+    resp = client.get("/presets/nope")
+    assert resp.status_code == 404
+
+
+def test_list_assets(client: TestClient) -> None:
+    resp = client.get("/assets")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 3
+
+
+def test_avatars_require_token(client: TestClient) -> None:
+    resp = client.get("/avatars")
+    assert resp.status_code == 401
+
+
+def test_avatar_crud(client: TestClient, token: str) -> None:
+    headers = auth_headers(token)
+    create = client.post(
+        "/avatars",
+        json={"name": "Nyx", "preset_id": "cyberpunk", "morphs": {"body_build": 0.7}},
+        headers=headers,
+    )
+    assert create.status_code == 201
+    avatar = create.json()
+    aid = avatar["id"]
+
+    listed = client.get("/avatars", headers=headers)
+    assert any(a["id"] == aid for a in listed.json())
+
+    fetched = client.get(f"/avatars/{aid}", headers=headers)
+    assert fetched.json()["name"] == "Nyx"
+
+    updated = client.put(
+        f"/avatars/{aid}",
+        json={"name": "Nyx v2", "preset_id": "vampire", "morphs": {}},
+        headers=headers,
+    )
+    assert updated.json()["name"] == "Nyx v2"
+
+    deleted = client.delete(f"/avatars/{aid}", headers=headers)
+    assert deleted.status_code == 204
+    assert client.get(f"/avatars/{aid}", headers=headers).status_code == 404
+
+
+def test_export_flow(client: TestClient, token: str) -> None:
+    headers = auth_headers(token)
+    avatar = client.post(
+        "/avatars",
+        json={"name": "Render target", "morphs": {}},
+        headers=headers,
+    ).json()
+
+    created = client.post(
+        "/exports",
+        json={"avatar_id": avatar["id"], "format": "png"},
+        headers=headers,
+    )
+    assert created.status_code == 201
+    job = created.json()
+    assert job["status"] == "queued"
+
+    polled = client.get(f"/exports/{job['id']}", headers=headers)
+    assert polled.json()["format"] == "png"
+
+
+def test_export_missing_avatar(client: TestClient, token: str) -> None:
+    resp = client.post(
+        "/exports",
+        json={"avatar_id": "does-not-exist", "format": "png"},
+        headers=auth_headers(token),
+    )
+    assert resp.status_code == 404
+
+
+def test_invalid_token(client: TestClient) -> None:
+    resp = client.get("/avatars", headers={"Authorization": "Bearer wrong"})
+    assert resp.status_code == 401
