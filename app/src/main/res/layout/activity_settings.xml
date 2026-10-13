@@ -1,21 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:titleTextColor="@android:color/white" />
+        android:layout_height="wrap_content">
 
-    <ScrollView
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Settings"
+            app:navigationIcon="@drawable/ic_back"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -26,97 +33,361 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Provider and account settings"
-                android:textAppearance="?attr/textAppearanceHeadline6" />
+                android:text="AI provider"
+                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:layout_marginBottom="8dp" />
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Preferred provider" />
-            <Spinner android:id="@+id/spinnerProvider" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Preferred provider"
+                android:layout_marginBottom="4dp" />
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_groq_key" />
-            <EditText android:id="@+id/etGroqKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
+            <Spinner
+                android:id="@+id/spinner_provider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Preferred AI provider"
+                android:layout_marginBottom="12dp" />
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="xAI API key" />
-            <EditText android:id="@+id/etXaiKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_groq_key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_groq_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_hf_token" />
-            <EditText android:id="@+id/etHfToken" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="xAI API key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_xai_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_or_key" />
-            <EditText android:id="@+id/etOrKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_hf_token">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_hf_token"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_gh_token" />
-            <EditText android:id="@+id/etGhToken" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_or_key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_or_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_gh_user" />
-            <EditText android:id="@+id/etGhUser" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_gh_token">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_gh_token"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Local model settings" android:layout_marginTop="16dp" android:textAppearance="?attr/textAppearanceHeadline6" />
-            <Switch android:id="@+id/switchOllama" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_use_ollama" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ollama model" />
-            <EditText android:id="@+id/etOllamaModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/hint_ollama_model" android:inputType="text" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_local_openai_url" />
-            <EditText android:id="@+id/etLocalOpenAiUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/hint_local_openai_model" android:inputType="textUri" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Local OpenAI-compatible model" />
-            <EditText android:id="@+id/etLocalOpenAiModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            <Switch android:id="@+id/switchLocalFirst" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Prefer local providers first" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_gh_user">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_gh_user"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
-                android:id="@+id/customProviderFields"
+                android:id="@+id/custom_provider_url_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Custom provider URL" />
-                <EditText android:id="@+id/etCustomUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/hint_custom_url" android:inputType="textUri" />
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_custom_model" />
-                <EditText android:id="@+id/etCustomModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/hint_custom_model" android:inputType="text" />
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/label_custom_key" />
-                <EditText android:id="@+id/etCustomKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/hint_custom_key" android:inputType="textPassword" android:autofillHints="password" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/label_custom_url">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_custom_url"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri" />
+                </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Agent roles" android:layout_marginTop="16dp" android:textAppearance="?attr/textAppearanceHeadline6" />
-
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Architect provider" />
-            <Spinner android:id="@+id/spArchProvider" android:layout_width="match_parent" android:layout_height="wrap_content" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Architect model ID" />
-            <EditText android:id="@+id/etArchModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Architect base URL" />
-            <EditText android:id="@+id/etArchUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Architect API key" />
-            <EditText android:id="@+id/etArchKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Architect system prompt" />
-            <EditText android:id="@+id/etArchPrompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" android:gravity="top" android:inputType="textMultiLine|textCapSentences" />
-
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Coder provider" />
-            <Spinner android:id="@+id/spCoderProvider" android:layout_width="match_parent" android:layout_height="wrap_content" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Coder model ID" />
-            <EditText android:id="@+id/etCoderModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Coder base URL" />
-            <EditText android:id="@+id/etCoderUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Coder API key" />
-            <EditText android:id="@+id/etCoderKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Coder system prompt" />
-            <EditText android:id="@+id/etCoderPrompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" android:gravity="top" android:inputType="textMultiLine|textCapSentences" />
-
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reviewer provider" />
-            <Spinner android:id="@+id/spReviewerProvider" android:layout_width="match_parent" android:layout_height="wrap_content" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reviewer model ID" />
-            <EditText android:id="@+id/etReviewerModel" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reviewer base URL" />
-            <EditText android:id="@+id/etReviewerUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reviewer API key" />
-            <EditText android:id="@+id/etReviewerKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:autofillHints="password" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reviewer system prompt" />
-            <EditText android:id="@+id/etReviewerPrompt" android:layout_width="match_parent" android:layout_height="wrap_content" android:minLines="3" android:gravity="top" android:inputType="textMultiLine|textCapSentences" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
+            <LinearLayout
+                android:id="@+id/custom_provider_model_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/btn_save"
-                android:textAllCaps="false" />
+                android:orientation="vertical">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/label_custom_model">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_custom_model"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/custom_provider_key_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/label_custom_key">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_custom_key"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_ollama"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/label_use_ollama"
+                android:layout_marginTop="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_ollama_model">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_ollama_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_local_openai_url">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_local_open_ai_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Local OpenAI-compatible model">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_local_open_ai_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_local_first"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Prefer local providers first"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Agent-specific provider settings"
+                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Architect provider" />
+            <Spinner
+                android:id="@+id/sp_arch_provider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Architect provider" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Architect model ID">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_arch_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Architect base URL">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_arch_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Architect API key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_arch_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Architect system prompt">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_arch_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Coder provider"
+                android:layout_marginTop="12dp" />
+            <Spinner
+                android:id="@+id/sp_coder_provider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Coder provider" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Coder model ID">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_coder_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Coder base URL">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_coder_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Coder API key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_coder_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Coder system prompt">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_coder_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Reviewer provider"
+                android:layout_marginTop="12dp" />
+            <Spinner
+                android:id="@+id/sp_reviewer_provider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Reviewer provider" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Reviewer model ID">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_reviewer_model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Reviewer base URL">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_reviewer_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Reviewer API key">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_reviewer_key"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Reviewer system prompt">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_reviewer_prompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_save"
+                android:textAllCaps="false"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="16dp" />
         </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
