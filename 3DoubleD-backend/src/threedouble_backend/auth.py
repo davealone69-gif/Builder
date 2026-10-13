@@ -1,1 +1,27 @@
-IiIiQmVhcmVyLXRva2VuIGF1dGhlbnRpY2F0aW9uIGRlcGVuZGVuY3kuIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgpmcm9tIGZhc3RhcGkgaW1wb3J0IERlcGVuZHMsIEhlYWRlciwgSFRUUEV4Y2VwdGlvbiwgc3RhdHVzCgpmcm9tIC5jb25maWcgaW1wb3J0IFNldHRpbmdzLCBnZXRfc2V0dGluZ3MKCgpkZWYgcmVxdWlyZV90b2tlbigKICAgIGF1dGhvcml6YXRpb246IHN0ciB8IE5vbmUgPSBIZWFkZXIoZGVmYXVsdD1Ob25lKSwKICAgIHNldHRpbmdzOiBTZXR0aW5ncyA9IERlcGVuZHMoZ2V0X3NldHRpbmdzKSwKKSAtPiBOb25lOgogICAgIiIiUmVqZWN0IHJlcXVlc3RzIGxhY2tpbmcgYSB2YWxpZCBiZWFyZXIgdG9rZW4uIiIiCiAgICBpZiBhdXRob3JpemF0aW9uIGlzIE5vbmUgb3Igbm90IGF1dGhvcml6YXRpb24uc3RhcnRzd2l0aCgiQmVhcmVyICIpOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oCiAgICAgICAgICAgIHN0YXR1c19jb2RlPXN0YXR1cy5IVFRQXzQwMV9VTkFVVEhPUklaRUQsCiAgICAgICAgICAgIGRldGFpbD0iTWlzc2luZyBiZWFyZXIgdG9rZW4iLAogICAgICAgICAgICBoZWFkZXJzPXsiV1dXLUF1dGhlbnRpY2F0ZSI6ICJCZWFyZXIifSwKICAgICAgICApCiAgICB0b2tlbiA9IGF1dGhvcml6YXRpb24ucmVtb3ZlcHJlZml4KCJCZWFyZXIgIikuc3RyaXAoKQogICAgaWYgdG9rZW4gIT0gc2V0dGluZ3MuZGRfdG9rZW46CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbigKICAgICAgICAgICAgc3RhdHVzX2NvZGU9c3RhdHVzLkhUVFBfNDAxX1VOQVVUSE9SSVpFRCwKICAgICAgICAgICAgZGV0YWlsPSJJbnZhbGlkIHRva2VuIiwKICAgICAgICAgICAgaGVhZGVycz17IldXVy1BdXRoZW50aWNhdGUiOiAiQmVhcmVyIn0sCiAgICAgICAgKQo=
+"""Bearer-token authentication dependency."""
+
+from __future__ import annotations
+
+from fastapi import Depends, Header, HTTPException, status
+
+from .config import Settings, get_settings
+
+
+def require_token(
+    authorization: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Reject requests lacking a valid bearer token."""
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    if token != settings.dd_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

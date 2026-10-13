@@ -1,1 +1,210 @@
-IiIiRmFzdEFQSSBhcHBsaWNhdGlvbiBmb3IgdGhlIDNEb3VibGUgRCAzRCBhdmF0YXIgc3R1ZGlvIGJhY2tlbmQuIiIiCgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFubm90YXRpb25zCgppbXBvcnQgdGltZQpmcm9tIGNvbnRleHRsaWIgaW1wb3J0IGFzeW5jY29udGV4dG1hbmFnZXIKZnJvbSB0eXBpbmcgaW1wb3J0IEFubm90YXRlZAoKZnJvbSBmYXN0YXBpIGltcG9ydCBEZXBlbmRzLCBGYXN0QVBJLCBIVFRQRXhjZXB0aW9uLCBSZXF1ZXN0LCBSZXNwb25zZQpmcm9tIGZhc3RhcGkubWlkZGxld2FyZS5jb3JzIGltcG9ydCBDT1JTTWlkZGxld2FyZQpmcm9tIHN0YXJsZXR0ZS5taWRkbGV3YXJlLmJhc2UgaW1wb3J0IEJhc2VIVFRQTWlkZGxld2FyZQoKZnJvbSAuIGltcG9ydCBfX3ZlcnNpb25fXwpmcm9tIC5hdXRoIGltcG9ydCByZXF1aXJlX3Rva2VuCmZyb20gLmNvbmZpZyBpbXBvcnQgU2V0dGluZ3MsIGdldF9zZXR0aW5ncwpmcm9tIC5sb2dnaW5nIGltcG9ydCBnZXRfbG9nZ2VyCmZyb20gLm1vZGVscyBpbXBvcnQgKAogICAgQXNzZXQsCiAgICBBdmF0YXIsCiAgICBBdmF0YXJDcmVhdGUsCiAgICBFeHBvcnRDcmVhdGUsCiAgICBFeHBvcnRKb2IsCiAgICBIZWFsdGhSZXNwb25zZSwKICAgIFByZXNldCwKICAgIFByZXNldENyZWF0ZSwKKQpmcm9tIC5wcmVzZXRzIGltcG9ydCBBU1NFVFMsIFBSRVNFVFMsIGdldF9hc3NldHMsIGdldF9wcmVzZXRzCmZyb20gLnN0b3JhZ2UgaW1wb3J0IEpzb25TdG9yYWdlLCBuZXdfaWQKCnNldHRpbmdzID0gU2V0dGluZ3MuZnJvbV9lbnYoKQpzdG9yYWdlID0gSnNvblN0b3JhZ2Uoc2V0dGluZ3MuZGRfZGF0YV9maWxlKQpsb2dnZXIgPSBnZXRfbG9nZ2VyKCkKCgpjbGFzcyBSZXF1ZXN0TG9nTWlkZGxld2FyZShCYXNlSFRUUE1pZGRsZXdhcmUpOgogICAgIiIiRW1pdCBhIHN0cnVjdHVyZWQgSlNPTiBsb2cgbGluZSBmb3IgZXZlcnkgcmVxdWVzdC4iIiIKCiAgICBhc3luYyBkZWYgZGlzcGF0Y2goc2VsZiwgcmVxdWVzdDogUmVxdWVzdCwgY2FsbF9uZXh0KToKICAgICAgICBzdGFydCA9IHRpbWUucGVyZl9jb3VudGVyKCkKICAgICAgICByZXNwb25zZSA9IGF3YWl0IGNhbGxfbmV4dChyZXF1ZXN0KQogICAgICAgIGR1cmF0aW9uX21zID0gcm91bmQoKHRpbWUucGVyZl9jb3VudGVyKCkgLSBzdGFydCkgKiAxMDAwLCAyKQogICAgICAgIGxvZ2dlci5pbmZvKAogICAgICAgICAgICAiaHR0cCByZXF1ZXN0IiwKICAgICAgICAgICAgZXh0cmE9ewogICAgICAgICAgICAgICAgIl9zdHJ1Y3R1cmVkIjogewogICAgICAgICAgICAgICAgICAgICJtZXRob2QiOiByZXF1ZXN0Lm1ldGhvZCwKICAgICAgICAgICAgICAgICAgICAicGF0aCI6IHJlcXVlc3QudXJsLnBhdGgsCiAgICAgICAgICAgICAgICAgICAgInN0YXR1cyI6IHJlc3BvbnNlLnN0YXR1c19jb2RlLAogICAgICAgICAgICAgICAgICAgICJkdXJhdGlvbl9tcyI6IGR1cmF0aW9uX21zLAogICAgICAgICAgICAgICAgICAgICJjbGllbnQiOiByZXF1ZXN0LmNsaWVudC5ob3N0IGlmIHJlcXVlc3QuY2xpZW50IGVsc2UgTm9uZSwKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICApCiAgICAgICAgcmV0dXJuIHJlc3BvbnNlCgoKQGFzeW5jY29udGV4dG1hbmFnZXIKYXN5bmMgZGVmIGxpZmVzcGFuKF86IEZhc3RBUEkpOgogICAgIiIiTG9nIHNlcnZlciBsaWZlY3ljbGUgYXMgc3RydWN0dXJlZCBKU09OLiIiIgogICAgbG9nZ2VyLmluZm8oCiAgICAgICAgInNlcnZlciBzdGFydGVkIiwKICAgICAgICBleHRyYT17CiAgICAgICAgICAgICJfc3RydWN0dXJlZCI6IHsKICAgICAgICAgICAgICAgICJ2ZXJzaW9uIjogX192ZXJzaW9uX18sCiAgICAgICAgICAgICAgICAiZW52aXJvbm1lbnQiOiBzZXR0aW5ncy5kZF9lbnZpcm9ubWVudCwKICAgICAgICAgICAgICAgICJkb2NzX2VuYWJsZWQiOiBkb2NzX3VybCBpcyBub3QgTm9uZSwKICAgICAgICAgICAgICAgICJjb3JzX29yaWdpbnMiOiBzZXR0aW5ncy5kZF9jb3JzX29yaWdpbnMsCiAgICAgICAgICAgIH0KICAgICAgICB9LAogICAgKQogICAgeWllbGQKICAgIGxvZ2dlci5pbmZvKCJzZXJ2ZXIgc3RvcHBlZCIpCgoKIyBgYGRvY3NfdXJsYGAgLyBgYHJlZG9jX3VybGBgIGFyZSBoaWRkZW4gaW4gcHJvZHVjdGlvbiB1bmxlc3MgZXhwbGljaXRseQojIHJlLWVuYWJsZWQgdmlhIEREX0RPQ1NfRU5BQkxFRD10cnVlLiBEZXZlbG9wbWVudCBhbHdheXMgZXhwb3NlcyB0aGVtLgpkb2NzX2VuYWJsZWQgPSBzZXR0aW5ncy5kZF9kb2NzX2VuYWJsZWQgaWYgc2V0dGluZ3MuaXNfcHJvZHVjdGlvbiBlbHNlIFRydWUKZG9jc191cmwgPSAiL2RvY3MiIGlmIGRvY3NfZW5hYmxlZCBlbHNlIE5vbmUKcmVkb2NfdXJsID0gIi9yZWRvYyIgaWYgZG9jc19lbmFibGVkIGVsc2UgTm9uZQoKYXBwID0gRmFzdEFQSSgKICAgIHRpdGxlPSIzRG91YmxlIEQgQmFja2VuZCIsCiAgICBkZXNjcmlwdGlvbj0iUkVTVCBBUEkgZm9yIHRoZSAzRG91YmxlIEQgcGhvdG9yZWFsaXN0aWMgM0QgYXZhdGFyIHN0dWRpby4iLAogICAgdmVyc2lvbj1fX3ZlcnNpb25fXywKICAgIGRvY3NfdXJsPWRvY3NfdXJsLAogICAgcmVkb2NfdXJsPXJlZG9jX3VybCwKICAgIG9wZW5hcGlfdXJsPSIvb3BlbmFwaS5qc29uIiBpZiBkb2NzX3VybCBlbHNlIE5vbmUsCiAgICBsaWZlc3Bhbj1saWZlc3BhbiwKKQoKIyBDT1JTIOKAlCBhbGxvdyB0aGUgQW5kcm9pZCBhcHAgKG9yIGEgd2ViIGNsaWVudCkgb3JpZ2lucyBsaXN0ZWQgaW4gY29uZmlnLgppZiBzZXR0aW5ncy5kZF9jb3JzX29yaWdpbnM6CiAgICBhcHAuYWRkX21pZGRsZXdhcmUoCiAgICAgICAgQ09SU01pZGRsZXdhcmUsCiAgICAgICAgYWxsb3dfb3JpZ2lucz1zZXR0aW5ncy5kZF9jb3JzX29yaWdpbnMsCiAgICAgICAgYWxsb3dfY3JlZGVudGlhbHM9VHJ1ZSwKICAgICAgICBhbGxvd19tZXRob2RzPVsiKiJdLAogICAgICAgIGFsbG93X2hlYWRlcnM9WyIqIl0sCiAgICApCgphcHAuYWRkX21pZGRsZXdhcmUoUmVxdWVzdExvZ01pZGRsZXdhcmUpCgpBdXRoRGVwID0gQW5ub3RhdGVkW05vbmUsIERlcGVuZHMocmVxdWlyZV90b2tlbildCgoKQGFwcC5nZXQoIi9oZWFsdGgiLCByZXNwb25zZV9tb2RlbD1IZWFsdGhSZXNwb25zZSwgdGFncz1bInN5c3RlbSJdKQpkZWYgaGVhbHRoKCkgLT4gSGVhbHRoUmVzcG9uc2U6CiAgICAiIiJMaXZlbmVzcyBjaGVjay4iIiIKICAgIHJldHVybiBIZWFsdGhSZXNwb25zZShzdGF0dXM9Im9rIiwgdmVyc2lvbj1fX3ZlcnNpb25fXywgZW52aXJvbm1lbnQ9c2V0dGluZ3MuZGRfZW52aXJvbm1lbnQpCgoKIyAtLS0tIFByZXNldHMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KQGFwcC5nZXQoIi9wcmVzZXRzIiwgcmVzcG9uc2VfbW9kZWw9bGlzdFtQcmVzZXRdLCB0YWdzPVsicHJlc2V0cyJdKQpkZWYgbGlzdF9wcmVzZXRzKCkgLT4gbGlzdFtQcmVzZXRdOgogICAgIiIiTGlzdCB0aGVtZWQgcHJlc2V0cyAoVmFtcGlyZSwgTWVkaWV2YWwsIERlbW9uLCBDeWJlcnB1bmssIC4uLikuIiIiCiAgICByZXR1cm4gZ2V0X3ByZXNldHMoKQoKCkBhcHAuZ2V0KCIvcHJlc2V0cy97cHJlc2V0X2lkfSIsIHJlc3BvbnNlX21vZGVsPVByZXNldCwgdGFncz1bInByZXNldHMiXSkKZGVmIGdldF9wcmVzZXQocHJlc2V0X2lkOiBzdHIpIC0+IFByZXNldDoKICAgICIiIlJldHVybiBhIHNpbmdsZSBwcmVzZXQgYnkgaWQuIiIiCiAgICBmb3IgcHJlc2V0IGluIFBSRVNFVFM6CiAgICAgICAgaWYgcHJlc2V0LmlkID09IHByZXNldF9pZDoKICAgICAgICAgICAgcmV0dXJuIHByZXNldAogICAgcmFpc2UgSFRUUEV4Y2VwdGlvbihzdGF0dXNfY29kZT00MDQsIGRldGFpbD0iUHJlc2V0IG5vdCBmb3VuZCIpCgoKQGFwcC5wb3N0KCIvcHJlc2V0cyIsIHJlc3BvbnNlX21vZGVsPVByZXNldCwgc3RhdHVzX2NvZGU9MjAxLCB0YWdzPVsicHJlc2V0cyJdKQpkZWYgY3JlYXRlX3ByZXNldChwYXlsb2FkOiBQcmVzZXRDcmVhdGUpIC0+IFByZXNldDoKICAgICIiIlJlZ2lzdGVyIGEgY3VzdG9tIHByZXNldCAoaW4tbWVtb3J5IGZvciB0aGlzIHNlc3Npb24pLiIiIgogICAgcHJlc2V0ID0gUHJlc2V0KGlkPW5ld19pZCgpLCAqKnBheWxvYWQubW9kZWxfZHVtcCgpKQogICAgUFJFU0VUUy5hcHBlbmQocHJlc2V0KQogICAgcmV0dXJuIHByZXNldAoKCiMgLS0tLSBBc3NldHMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCkBhcHAuZ2V0KCIvYXNzZXRzIiwgcmVzcG9uc2VfbW9kZWw9bGlzdFtBc3NldF0sIHRhZ3M9WyJhc3NldHMiXSkKZGVmIGxpc3RfYXNzZXRzKCkgLT4gbGlzdFtBc3NldF06CiAgICAiIiJMaXN0IEdMQiBhc3NldCBtZXRhZGF0YSBhdmFpbGFibGUgdG8gdGhlIGNsaWVudC4iIiIKICAgIHJldHVybiBnZXRfYXNzZXRzKCkKCgpAYXBwLmdldCgiL2Fzc2V0cy97YXNzZXRfaWR9IiwgcmVzcG9uc2VfbW9kZWw9QXNzZXQsIHRhZ3M9WyJhc3NldHMiXSkKZGVmIGdldF9hc3NldChhc3NldF9pZDogc3RyKSAtPiBBc3NldDoKICAgICIiIlJldHVybiBhIHNpbmdsZSBhc3NldCBieSBpZC4iIiIKICAgIGZvciBhc3NldCBpbiBBU1NFVFM6CiAgICAgICAgaWYgYXNzZXQuaWQgPT0gYXNzZXRfaWQ6CiAgICAgICAgICAgIHJldHVybiBhc3NldAogICAgcmFpc2UgSFRUUEV4Y2VwdGlvbihzdGF0dXNfY29kZT00MDQsIGRldGFpbD0iQXNzZXQgbm90IGZvdW5kIikKCgojIC0tLS0gQXZhdGFycyAocHJvdGVjdGVkKSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCkBhcHAuZ2V0KCIvYXZhdGFycyIsIHJlc3BvbnNlX21vZGVsPWxpc3RbQXZhdGFyXSwgdGFncz1bImF2YXRhcnMiXSkKZGVmIGxpc3RfYXZhdGFycyhfOiBBdXRoRGVwKSAtPiBsaXN0W0F2YXRhcl06CiAgICAiIiJMaXN0IHNhdmVkIGF2YXRhcnMuIiIiCiAgICByZXR1cm4gW0F2YXRhcigqKmEpIGZvciBhIGluIHN0b3JhZ2UubGlzdF9pdGVtcygiYXZhdGFycyIpXQoKCkBhcHAucG9zdCgiL2F2YXRhcnMiLCByZXNwb25zZV9tb2RlbD1BdmF0YXIsIHN0YXR1c19jb2RlPTIwMSwgdGFncz1bImF2YXRhcnMiXSkKZGVmIGNyZWF0ZV9hdmF0YXIocGF5bG9hZDogQXZhdGFyQ3JlYXRlLCBfOiBBdXRoRGVwKSAtPiBBdmF0YXI6CiAgICAiIiJTYXZlIGEgbmV3IGF2YXRhci4iIiIKICAgIGF2YXRhciA9IEF2YXRhcihpZD1uZXdfaWQoKSwgKipwYXlsb2FkLm1vZGVsX2R1bXAoKSkKICAgIHN0b3JhZ2UuaW5zZXJ0X2l0ZW0oImF2YXRhcnMiLCBhdmF0YXIubW9kZWxfZHVtcCgpKQogICAgcmV0dXJuIGF2YXRhcgoKCkBhcHAuZ2V0KCIvYXZhdGFycy97YXZhdGFyX2lkfSIsIHJlc3BvbnNlX21vZGVsPUF2YXRhciwgdGFncz1bImF2YXRhcnMiXSkKZGVmIGdldF9hdmF0YXIoYXZhdGFyX2lkOiBzdHIsIF86IEF1dGhEZXApIC0+IEF2YXRhcjoKICAgICIiIkZldGNoIGEgc2luZ2xlIGF2YXRhci4iIiIKICAgIGRhdGEgPSBzdG9yYWdlLmdldF9pdGVtKCJhdmF0YXJzIiwgYXZhdGFyX2lkKQogICAgaWYgZGF0YSBpcyBOb25lOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oc3RhdHVzX2NvZGU9NDA0LCBkZXRhaWw9IkF2YXRhciBub3QgZm91bmQiKQogICAgcmV0dXJuIEF2YXRhcigqKmRhdGEpCgoKQGFwcC5wdXQoIi9hdmF0YXJzL3thdmF0YXJfaWR9IiwgcmVzcG9uc2VfbW9kZWw9QXZhdGFyLCB0YWdzPVsiYXZhdGFycyJdKQpkZWYgdXBkYXRlX2F2YXRhcihhdmF0YXJfaWQ6IHN0ciwgcGF5bG9hZDogQXZhdGFyQ3JlYXRlLCBfOiBBdXRoRGVwKSAtPiBBdmF0YXI6CiAgICAiIiJVcGRhdGUgYW4gZXhpc3RpbmcgYXZhdGFyLiIiIgogICAgdXBkYXRlZCA9IHN0b3JhZ2UudXBkYXRlX2l0ZW0oImF2YXRhcnMiLCBhdmF0YXJfaWQsIHBheWxvYWQubW9kZWxfZHVtcCgpKQogICAgaWYgdXBkYXRlZCBpcyBOb25lOgogICAgICAgIHJhaXNlIEhUVFBFeGNlcHRpb24oc3RhdHVzX2NvZGU9NDA0LCBkZXRhaWw9IkF2YXRhciBub3QgZm91bmQiKQogICAgcmV0dXJuIEF2YXRhcigqKnVwZGF0ZWQpCgoKQGFwcC5kZWxldGUoIi9hdmF0YXJzL3thdmF0YXJfaWR9Iiwgc3RhdHVzX2NvZGU9MjA0LCB0YWdzPVsiYXZhdGFycyJdKQpkZWYgZGVsZXRlX2F2YXRhcihhdmF0YXJfaWQ6IHN0ciwgXzogQXV0aERlcCkgLT4gUmVzcG9uc2U6CiAgICAiIiJEZWxldGUgYW4gYXZhdGFyLiBSZXR1cm5zIDIwNCBObyBDb250ZW50IG9uIHN1Y2Nlc3MuIiIiCiAgICBpZiBub3Qgc3RvcmFnZS5kZWxldGVfaXRlbSgiYXZhdGFycyIsIGF2YXRhcl9pZCk6CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbihzdGF0dXNfY29kZT00MDQsIGRldGFpbD0iQXZhdGFyIG5vdCBmb3VuZCIpCiAgICByZXR1cm4gUmVzcG9uc2Uoc3RhdHVzX2NvZGU9MjA0KQoKCiMgLS0tLSBFeHBvcnQgam9icyAocHJvdGVjdGVkKSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KQGFwcC5wb3N0KCIvZXhwb3J0cyIsIHJlc3BvbnNlX21vZGVsPUV4cG9ydEpvYiwgc3RhdHVzX2NvZGU9MjAxLCB0YWdzPVsiZXhwb3J0cyJdKQpkZWYgY3JlYXRlX2V4cG9ydChwYXlsb2FkOiBFeHBvcnRDcmVhdGUsIF86IEF1dGhEZXApIC0+IEV4cG9ydEpvYjoKICAgICIiIlN1Ym1pdCBhbiBleHBvcnQgKHJlbmRlcikgam9iOyByZXR1cm5zIGFuIGlkIHRvIHBvbGwuIiIiCiAgICBpZiBzdG9yYWdlLmdldF9pdGVtKCJhdmF0YXJzIiwgcGF5bG9hZC5hdmF0YXJfaWQpIGlzIE5vbmU6CiAgICAgICAgcmFpc2UgSFRUUEV4Y2VwdGlvbihzdGF0dXNfY29kZT00MDQsIGRldGFpbD0iQXZhdGFyIG5vdCBmb3VuZCIpCiAgICBqb2IgPSBFeHBvcnRKb2IoaWQ9bmV3X2lkKCksIGF2YXRhcl9pZD1wYXlsb2FkLmF2YXRhcl9pZCwgZm9ybWF0PXBheWxvYWQuZm9ybWF0KQogICAgc3RvcmFnZS5pbnNlcnRfaXRlbSgiZXhwb3J0cyIsIGpvYi5tb2RlbF9kdW1wKCkpCiAgICByZXR1cm4gam9iCgoKQGFwcC5nZXQoIi9leHBvcnRzL3tqb2JfaWR9IiwgcmVzcG9uc2VfbW9kZWw9RXhwb3J0Sm9iLCB0YWdzPVsiZXhwb3J0cyJdKQpkZWYgZ2V0X2V4cG9ydChqb2JfaWQ6IHN0ciwgXzogQXV0aERlcCkgLT4gRXhwb3J0Sm9iOgogICAgIiIiUG9sbCB0aGUgc3RhdHVzIG9mIGFuIGV4cG9ydCBqb2IuIiIiCiAgICBkYXRhID0gc3RvcmFnZS5nZXRfaXRlbSgiZXhwb3J0cyIsIGpvYl9pZCkKICAgIGlmIGRhdGEgaXMgTm9uZToKICAgICAgICByYWlzZSBIVFRQRXhjZXB0aW9uKHN0YXR1c19jb2RlPTQwNCwgZGV0YWlsPSJFeHBvcnQgam9iIG5vdCBmb3VuZCIpCiAgICByZXR1cm4gRXhwb3J0Sm9iKCoqZGF0YSkK
+"""FastAPI application for the 3Double D 3D avatar studio backend."""
+
+from __future__ import annotations
+
+import time
+from contextlib import asynccontextmanager
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from . import __version__
+from .auth import require_token
+from .config import Settings, get_settings
+from .logging import get_logger
+from .models import (
+    Asset,
+    Avatar,
+    AvatarCreate,
+    ExportCreate,
+    ExportJob,
+    HealthResponse,
+    Preset,
+    PresetCreate,
+)
+from .presets import ASSETS, PRESETS, get_assets, get_presets
+from .storage import JsonStorage, new_id
+
+settings = Settings.from_env()
+storage = JsonStorage(settings.dd_data_file)
+logger = get_logger()
+
+
+class RequestLogMiddleware(BaseHTTPMiddleware):
+    """Emit a structured JSON log line for every request."""
+
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        logger.info(
+            "http request",
+            extra={
+                "_structured": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": response.status_code,
+                    "duration_ms": duration_ms,
+                    "client": request.client.host if request.client else None,
+                }
+            },
+        )
+        return response
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Log server lifecycle as structured JSON."""
+    logger.info(
+        "server started",
+        extra={
+            "_structured": {
+                "version": __version__,
+                "environment": settings.dd_environment,
+                "docs_enabled": docs_url is not None,
+                "cors_origins": settings.dd_cors_origins,
+            }
+        },
+    )
+    yield
+    logger.info("server stopped")
+
+
+# ``docs_url`` / ``redoc_url`` are hidden in production unless explicitly
+# re-enabled via DD_DOCS_ENABLED=true. Development always exposes them.
+docs_enabled = settings.dd_docs_enabled if settings.is_production else True
+docs_url = "/docs" if docs_enabled else None
+redoc_url = "/redoc" if docs_enabled else None
+
+app = FastAPI(
+    title="3Double D Backend",
+    description="REST API for the 3Double D photorealistic 3D avatar studio.",
+    version=__version__,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url="/openapi.json" if docs_url else None,
+    lifespan=lifespan,
+)
+
+# CORS — allow the Android app (or a web client) origins listed in config.
+if settings.dd_cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.dd_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+app.add_middleware(RequestLogMiddleware)
+
+AuthDep = Annotated[None, Depends(require_token)]
+
+
+@app.get("/health", response_model=HealthResponse, tags=["system"])
+def health() -> HealthResponse:
+    """Liveness check."""
+    return HealthResponse(status="ok", version=__version__, environment=settings.dd_environment)
+
+
+# ---- Presets -----------------------------------------------------------
+@app.get("/presets", response_model=list[Preset], tags=["presets"])
+def list_presets() -> list[Preset]:
+    """List themed presets (Vampire, Medieval, Demon, Cyberpunk, ...)."""
+    return get_presets()
+
+
+@app.get("/presets/{preset_id}", response_model=Preset, tags=["presets"])
+def get_preset(preset_id: str) -> Preset:
+    """Return a single preset by id."""
+    for preset in PRESETS:
+        if preset.id == preset_id:
+            return preset
+    raise HTTPException(status_code=404, detail="Preset not found")
+
+
+@app.post("/presets", response_model=Preset, status_code=201, tags=["presets"])
+def create_preset(payload: PresetCreate) -> Preset:
+    """Register a custom preset (in-memory for this session)."""
+    preset = Preset(id=new_id(), **payload.model_dump())
+    PRESETS.append(preset)
+    return preset
+
+
+# ---- Assets ------------------------------------------------------------
+@app.get("/assets", response_model=list[Asset], tags=["assets"])
+def list_assets() -> list[Asset]:
+    """List GLB asset metadata available to the client."""
+    return get_assets()
+
+
+@app.get("/assets/{asset_id}", response_model=Asset, tags=["assets"])
+def get_asset(asset_id: str) -> Asset:
+    """Return a single asset by id."""
+    for asset in ASSETS:
+        if asset.id == asset_id:
+            return asset
+    raise HTTPException(status_code=404, detail="Asset not found")
+
+
+# ---- Avatars (protected) ----------------------------------------------
+@app.get("/avatars", response_model=list[Avatar], tags=["avatars"])
+def list_avatars(_: AuthDep) -> list[Avatar]:
+    """List saved avatars."""
+    return [Avatar(**a) for a in storage.list_items("avatars")]
+
+
+@app.post("/avatars", response_model=Avatar, status_code=201, tags=["avatars"])
+def create_avatar(payload: AvatarCreate, _: AuthDep) -> Avatar:
+    """Save a new avatar."""
+    avatar = Avatar(id=new_id(), **payload.model_dump())
+    storage.insert_item("avatars", avatar.model_dump())
+    return avatar
+
+
+@app.get("/avatars/{avatar_id}", response_model=Avatar, tags=["avatars"])
+def get_avatar(avatar_id: str, _: AuthDep) -> Avatar:
+    """Fetch a single avatar."""
+    data = storage.get_item("avatars", avatar_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    return Avatar(**data)
+
+
+@app.put("/avatars/{avatar_id}", response_model=Avatar, tags=["avatars"])
+def update_avatar(avatar_id: str, payload: AvatarCreate, _: AuthDep) -> Avatar:
+    """Update an existing avatar."""
+    updated = storage.update_item("avatars", avatar_id, payload.model_dump())
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    return Avatar(**updated)
+
+
+@app.delete("/avatars/{avatar_id}", status_code=204, tags=["avatars"])
+def delete_avatar(avatar_id: str, _: AuthDep) -> Response:
+    """Delete an avatar. Returns 204 No Content on success."""
+    if not storage.delete_item("avatars", avatar_id):
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    return Response(status_code=204)
+
+
+# ---- Export jobs (protected) ------------------------------------------
+@app.post("/exports", response_model=ExportJob, status_code=201, tags=["exports"])
+def create_export(payload: ExportCreate, _: AuthDep) -> ExportJob:
+    """Submit an export (render) job; returns an id to poll."""
+    if storage.get_item("avatars", payload.avatar_id) is None:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    job = ExportJob(id=new_id(), avatar_id=payload.avatar_id, format=payload.format)
+    storage.insert_item("exports", job.model_dump())
+    return job
+
+
+@app.get("/exports/{job_id}", response_model=ExportJob, tags=["exports"])
+def get_export(job_id: str, _: AuthDep) -> ExportJob:
+    """Poll the status of an export job."""
+    data = storage.get_item("exports", job_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Export job not found")
+    return ExportJob(**data)
