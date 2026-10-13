@@ -1,1 +1,58 @@
-IiIiQnVpbHQtaW4gdGhlbWVkIHByZXNldCBhbmQgYXNzZXQgbGlicmFyeSBmb3IgM0RvdWJsZSBELgoKVGhlc2UgbWlycm9yIHRoZSBkZXNpZ24gYnJpZWYncyBwcmVzZXRzIChWYW1waXJlLCBNZWRpZXZhbCwgRGVtb24sIEN5YmVycHVuaykKc28gdGhlIEFuZHJvaWQgY2xpZW50IGNhbiBwdWxsIHRoZSBzYW1lIGRlZmluaXRpb25zIGZyb20gdGhlIGJhY2tlbmQuCiIiIgoKZnJvbSBfX2Z1dHVyZV9fIGltcG9ydCBhbm5vdGF0aW9ucwoKZnJvbSAubW9kZWxzIGltcG9ydCBBc3NldCwgUHJlc2V0CgpQUkVTRVRTOiBsaXN0W1ByZXNldF0gPSBbCiAgICBQcmVzZXQoCiAgICAgICAgaWQ9InZhbXBpcmUiLAogICAgICAgIG5hbWU9IlZhbXBpcmUiLAogICAgICAgIHByaW1hcnlfbWF0ZXJpYWw9IlBhbGUiLAogICAgICAgIGJhc2VfY29sb3I9IiNGMUU5REYiLAogICAgICAgIGFjY2VudF9jb2xvcj0iI0IzMjQyNCIsCiAgICAgICAgbW9ycGhzPXsic2tpbl90b25lIjogMC4xNSwgImJvZHlfYnVpbGQiOiAwLjQ1fSwKICAgICksCiAgICBQcmVzZXQoCiAgICAgICAgaWQ9Im1lZGlldmFsIiwKICAgICAgICBuYW1lPSJNZWRpZXZhbCIsCiAgICAgICAgcHJpbWFyeV9tYXRlcmlhbD0iSXJvbiIsCiAgICAgICAgYmFzZV9jb2xvcj0iIzlBQTBBNiIsCiAgICAgICAgYWNjZW50X2NvbG9yPSIjOEE1QTNCIiwKICAgICAgICBtb3JwaHM9eyJza2luX3RvbmUiOiAwLjQsICJib2R5X2J1aWxkIjogMC41NX0sCiAgICApLAogICAgUHJlc2V0KAogICAgICAgIGlkPSJkZW1vbiIsCiAgICAgICAgbmFtZT0iRGVtb24iLAogICAgICAgIHByaW1hcnlfbWF0ZXJpYWw9IkNyaW1zb24iLAogICAgICAgIGJhc2VfY29sb3I9IiNCMzI0MjQiLAogICAgICAgIGFjY2VudF9jb2xvcj0iIzFFMUIxQiIsCiAgICAgICAgbW9ycGhzPXsic2tpbl90b25lIjogMC42LCAiYm9keV9idWlsZCI6IDAuN30sCiAgICApLAogICAgUHJlc2V0KAogICAgICAgIGlkPSJjeWJlcnB1bmsiLAogICAgICAgIG5hbWU9IkN5YmVycHVuayIsCiAgICAgICAgcHJpbWFyeV9tYXRlcmlhbD0iTmVvbiIsCiAgICAgICAgYmFzZV9jb2xvcj0iIzdCMkJFMCIsCiAgICAgICAgYWNjZW50X2NvbG9yPSIjMzhCREY4IiwKICAgICAgICBtb3JwaHM9eyJza2luX3RvbmUiOiAwLjUsICJib2R5X2J1aWxkIjogMC42fSwKICAgICksCl0KCkFTU0VUUzogbGlzdFtBc3NldF0gPSBbCiAgICBBc3NldChpZD0ic2FtcGxlLWZlbWFsZSIsIG5hbWU9IkZlbWFsZSBCYXNlIChTYW1wbGUpIiwgdXJpPSJhc3NldHMvbW9kZWxzL2ZlbWFsZS5nbGIiLCBjYXRlZ29yeT0iZmVtYWxlIiwgc2FtcGxlPVRydWUpLAogICAgQXNzZXQoaWQ9InNhbXBsZS1tYWxlIiwgbmFtZT0iTWFsZSBCYXNlIChTYW1wbGUpIiwgdXJpPSJhc3NldHMvbW9kZWxzL21hbGUuZ2xiIiwgY2F0ZWdvcnk9Im1hbGUiLCBzYW1wbGU9VHJ1ZSksCiAgICBBc3NldChpZD0ic2FtcGxlLWN5Ym9yZyIsIG5hbWU9IkN5Ym9yZyBCYXNlIChTYW1wbGUpIiwgdXJpPSJhc3NldHMvbW9kZWxzL2N5Ym9yZy5nbGIiLCBjYXRlZ29yeT0iY3lib3JnIiwgc2FtcGxlPVRydWUpLApdCgoKZGVmIGdldF9wcmVzZXRzKCkgLT4gbGlzdFtQcmVzZXRdOgogICAgcmV0dXJuIGxpc3QoUFJFU0VUUykKCgpkZWYgZ2V0X2Fzc2V0cygpIC0+IGxpc3RbQXNzZXRdOgogICAgcmV0dXJuIGxpc3QoQVNTRVRTKQo=
+"""Built-in themed preset and asset library for 3Double D.
+
+These mirror the design brief's presets (Vampire, Medieval, Demon, Cyberpunk)
+so the Android client can pull the same definitions from the backend.
+"""
+
+from __future__ import annotations
+
+from .models import Asset, Preset
+
+PRESETS: list[Preset] = [
+    Preset(
+        id="vampire",
+        name="Vampire",
+        primary_material="Pale",
+        base_color="#F1E9DF",
+        accent_color="#B32424",
+        morphs={"skin_tone": 0.15, "body_build": 0.45},
+    ),
+    Preset(
+        id="medieval",
+        name="Medieval",
+        primary_material="Iron",
+        base_color="#9AA0A6",
+        accent_color="#8A5A3B",
+        morphs={"skin_tone": 0.4, "body_build": 0.55},
+    ),
+    Preset(
+        id="demon",
+        name="Demon",
+        primary_material="Crimson",
+        base_color="#B32424",
+        accent_color="#1E1B1B",
+        morphs={"skin_tone": 0.6, "body_build": 0.7},
+    ),
+    Preset(
+        id="cyberpunk",
+        name="Cyberpunk",
+        primary_material="Neon",
+        base_color="#7B2BE0",
+        accent_color="#38BDF8",
+        morphs={"skin_tone": 0.5, "body_build": 0.6},
+    ),
+]
+
+ASSETS: list[Asset] = [
+    Asset(id="sample-female", name="Female Base (Sample)", uri="assets/models/female.glb", category="female", sample=True),
+    Asset(id="sample-male", name="Male Base (Sample)", uri="assets/models/male.glb", category="male", sample=True),
+    Asset(id="sample-cyborg", name="Cyborg Base (Sample)", uri="assets/models/cyborg.glb", category="cyborg", sample=True),
+]
+
+
+def get_presets() -> list[Preset]:
+    return list(PRESETS)
+
+
+def get_assets() -> list[Asset]:
+    return list(ASSETS)
