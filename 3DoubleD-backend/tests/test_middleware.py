@@ -1,1 +1,92 @@
-IiIiVGVzdHMgZm9yIENPUlMgbWlkZGxld2FyZSBhbmQgdGhlIHByb2R1Y3Rpb24gL2RvY3MgZmxhZy4iIiIKCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgYW5ub3RhdGlvbnMKCmltcG9ydCBpbXBvcnRsaWIKCmltcG9ydCBweXRlc3QKZnJvbSBmYXN0YXBpLnRlc3RjbGllbnQgaW1wb3J0IFRlc3RDbGllbnQKCgpkZWYgX2ZyZXNoX2FwcChtb25rZXlwYXRjaCwgKiplbnYpIC0+IFRlc3RDbGllbnQ6CiAgICAiIiJSZWxvYWQgdGhlIGJhY2tlbmQgbW9kdWxlIHVuZGVyIHRoZSBnaXZlbiBlbnYgc28gaXRzIGNvbmZpZyBpcyBhcHBsaWVkLiIiIgogICAgZm9yIGtleSwgdmFsdWUgaW4gZW52Lml0ZW1zKCk6CiAgICAgICAgbW9ua2V5cGF0Y2guc2V0ZW52KGtleSwgdmFsdWUpCiAgICBpbXBvcnQgdGhyZWVkb3VibGVfYmFja2VuZC5tYWluIGFzIG1haW4KCiAgICBpbXBvcnRsaWIucmVsb2FkKG1haW4pCiAgICByZXR1cm4gVGVzdENsaWVudChtYWluLmFwcCkKCgpAcHl0ZXN0LmZpeHR1cmUoKQpkZWYgbm9fZG9jc19wcm9kKG1vbmtleXBhdGNoKToKICAgIHJldHVybiBfZnJlc2hfYXBwKAogICAgICAgIG1vbmtleXBhdGNoLAogICAgICAgIEREX0VOVklST05NRU5UPSJwcm9kdWN0aW9uIiwKICAgICAgICBERF9ET0NTX0VOQUJMRUQ9ImZhbHNlIiwKICAgICAgICBERF9DT1JTX09SSUdJTlM9Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwMCIsCiAgICApCgoKQHB5dGVzdC5maXh0dXJlKCkKZGVmIGRvY3NfcHJvZChtb25rZXlwYXRjaCk6CiAgICByZXR1cm4gX2ZyZXNoX2FwcCgKICAgICAgICBtb25rZXlwYXRjaCwKICAgICAgICBERF9FTlZJUk9OTUVOVD0icHJvZHVjdGlvbiIsCiAgICAgICAgRERfRE9DU19FTkFCTEVEPSJ0cnVlIiwKICAgICkKCgpAcHl0ZXN0LmZpeHR1cmUoKQpkZWYgZGV2KG1vbmtleXBhdGNoKToKICAgIHJldHVybiBfZnJlc2hfYXBwKG1vbmtleXBhdGNoLCBERF9FTlZJUk9OTUVOVD0iZGV2ZWxvcG1lbnQiKQoKCmRlZiB0ZXN0X2NvcnNfYWxsb3dlZF9vcmlnaW4obm9fZG9jc19wcm9kOiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgcmVzcCA9IG5vX2RvY3NfcHJvZC5vcHRpb25zKAogICAgICAgICIvcHJlc2V0cyIsCiAgICAgICAgaGVhZGVycz17CiAgICAgICAgICAgICJPcmlnaW4iOiAiaHR0cDovL2xvY2FsaG9zdDozMDAwIiwKICAgICAgICAgICAgIkFjY2Vzcy1Db250cm9sLVJlcXVlc3QtTWV0aG9kIjogIkdFVCIsCiAgICAgICAgfSwKICAgICkKICAgIGFzc2VydCByZXNwLnN0YXR1c19jb2RlID09IDIwMAogICAgYXNzZXJ0IHJlc3AuaGVhZGVycy5nZXQoImFjY2Vzcy1jb250cm9sLWFsbG93LW9yaWdpbiIpID09ICJodHRwOi8vbG9jYWxob3N0OjMwMDAiCiAgICBhc3NlcnQgIkdFVCIgaW4gcmVzcC5oZWFkZXJzLmdldCgiYWNjZXNzLWNvbnRyb2wtYWxsb3ctbWV0aG9kcyIsICIiKQoKCmRlZiB0ZXN0X2NvcnNfZGlzYWxsb3dlZF9vcmlnaW4obm9fZG9jc19wcm9kOiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgcmVzcCA9IG5vX2RvY3NfcHJvZC5vcHRpb25zKAogICAgICAgICIvcHJlc2V0cyIsCiAgICAgICAgaGVhZGVycz17CiAgICAgICAgICAgICJPcmlnaW4iOiAiaHR0cDovL2V2aWwuZXhhbXBsZSIsCiAgICAgICAgICAgICJBY2Nlc3MtQ29udHJvbC1SZXF1ZXN0LU1ldGhvZCI6ICJHRVQiLAogICAgICAgIH0sCiAgICApCiAgICBhc3NlcnQgcmVzcC5oZWFkZXJzLmdldCgiYWNjZXNzLWNvbnRyb2wtYWxsb3ctb3JpZ2luIikgaXMgTm9uZQoKCmRlZiB0ZXN0X2NvcnNfb2ZmX3doZW5fbm9fb3JpZ2lucyhkZXY6IFRlc3RDbGllbnQpIC0+IE5vbmU6CiAgICByZXNwID0gZGV2Lm9wdGlvbnMoCiAgICAgICAgIi9wcmVzZXRzIiwKICAgICAgICBoZWFkZXJzPXsKICAgICAgICAgICAgIk9yaWdpbiI6ICJodHRwOi8vbG9jYWxob3N0OjMwMDAiLAogICAgICAgICAgICAiQWNjZXNzLUNvbnRyb2wtUmVxdWVzdC1NZXRob2QiOiAiR0VUIiwKICAgICAgICB9LAogICAgKQogICAgYXNzZXJ0IHJlc3AuaGVhZGVycy5nZXQoImFjY2Vzcy1jb250cm9sLWFsbG93LW9yaWdpbiIpIGlzIE5vbmUKCgpkZWYgdGVzdF9kb2NzX2hpZGRlbl9pbl9wcm9kdWN0aW9uX2J5X2RlZmF1bHQobm9fZG9jc19wcm9kOiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgYXNzZXJ0IG5vX2RvY3NfcHJvZC5nZXQoIi9kb2NzIikuc3RhdHVzX2NvZGUgPT0gNDA0CiAgICBhc3NlcnQgbm9fZG9jc19wcm9kLmdldCgiL3JlZG9jIikuc3RhdHVzX2NvZGUgPT0gNDA0CiAgICBhc3NlcnQgbm9fZG9jc19wcm9kLmdldCgiL29wZW5hcGkuanNvbiIpLnN0YXR1c19jb2RlID09IDQwNAoKCmRlZiB0ZXN0X2RvY3Nfc2hvd25faW5fcHJvZHVjdGlvbl93aGVuX2VuYWJsZWQoZG9jc19wcm9kOiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgYXNzZXJ0IGRvY3NfcHJvZC5nZXQoIi9kb2NzIikuc3RhdHVzX2NvZGUgPT0gMjAwCiAgICBhc3NlcnQgZG9jc19wcm9kLmdldCgiL29wZW5hcGkuanNvbiIpLnN0YXR1c19jb2RlID09IDIwMAoKCmRlZiB0ZXN0X2RvY3Nfc2hvd25faW5fZGV2ZWxvcG1lbnQoZGV2OiBUZXN0Q2xpZW50KSAtPiBOb25lOgogICAgYXNzZXJ0IGRldi5nZXQoIi9kb2NzIikuc3RhdHVzX2NvZGUgPT0gMjAwCg==
+"""Tests for CORS middleware and the production /docs flag."""
+
+from __future__ import annotations
+
+import importlib
+
+import pytest
+from fastapi.testclient import TestClient
+
+
+def _fresh_app(monkeypatch, **env) -> TestClient:
+    """Reload the backend module under the given env so its config is applied."""
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    import threedouble_backend.main as main
+
+    importlib.reload(main)
+    return TestClient(main.app)
+
+
+@pytest.fixture()
+def no_docs_prod(monkeypatch):
+    return _fresh_app(
+        monkeypatch,
+        DD_ENVIRONMENT="production",
+        DD_DOCS_ENABLED="false",
+        DD_CORS_ORIGINS="http://localhost:3000",
+    )
+
+
+@pytest.fixture()
+def docs_prod(monkeypatch):
+    return _fresh_app(
+        monkeypatch,
+        DD_ENVIRONMENT="production",
+        DD_DOCS_ENABLED="true",
+    )
+
+
+@pytest.fixture()
+def dev(monkeypatch):
+    return _fresh_app(monkeypatch, DD_ENVIRONMENT="development")
+
+
+def test_cors_allowed_origin(no_docs_prod: TestClient) -> None:
+    resp = no_docs_prod.options(
+        "/presets",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
+    assert "GET" in resp.headers.get("access-control-allow-methods", "")
+
+
+def test_cors_disallowed_origin(no_docs_prod: TestClient) -> None:
+    resp = no_docs_prod.options(
+        "/presets",
+        headers={
+            "Origin": "http://evil.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert resp.headers.get("access-control-allow-origin") is None
+
+
+def test_cors_off_when_no_origins(dev: TestClient) -> None:
+    resp = dev.options(
+        "/presets",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert resp.headers.get("access-control-allow-origin") is None
+
+
+def test_docs_hidden_in_production_by_default(no_docs_prod: TestClient) -> None:
+    assert no_docs_prod.get("/docs").status_code == 404
+    assert no_docs_prod.get("/redoc").status_code == 404
+    assert no_docs_prod.get("/openapi.json").status_code == 404
+
+
+def test_docs_shown_in_production_when_enabled(docs_prod: TestClient) -> None:
+    assert docs_prod.get("/docs").status_code == 200
+    assert docs_prod.get("/openapi.json").status_code == 200
+
+
+def test_docs_shown_in_development(dev: TestClient) -> None:
+    assert dev.get("/docs").status_code == 200
