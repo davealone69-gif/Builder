@@ -104,7 +104,6 @@ class SwarmBuilderApp : Application() {
         // Smart fallback: if saved provider needs a key but has none, use HERMES_AGENT
         val effectiveProvider = when {
             !savedProvider.requiresApiKey -> savedProvider  // HERMES_AGENT, Ollama, local
-            savedProvider == LlmProvider.XAI_GROK && xaiKey.isNotBlank() -> savedProvider
             savedProvider == LlmProvider.GROQ && groqKey.isNotBlank() -> savedProvider
             savedProvider == LlmProvider.OPENROUTER && orKey.isNotBlank() -> savedProvider
             savedProvider == LlmProvider.HUGGINGFACE && hfToken.isNotBlank() -> savedProvider
